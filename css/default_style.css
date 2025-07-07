@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
 :root {
   --bg-main: #18181c;
   --bg-surface: #23232a;
@@ -11,6 +13,8 @@
 }
 
 html, body {
+    font-family: 'Montserrat';
+
     margin: 0;
     padding: 0;
     width: 100%;
