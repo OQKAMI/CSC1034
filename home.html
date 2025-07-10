@@ -47,7 +47,45 @@
 
                     <!-- Registration Form -->
 
-                    <button id="switch-a">Already Registered</button>
+                    <div class="title-container">
+                        <h1 class="title">9 Letters</h1>
+                    </div>
+
+                    <form id="reg-form">
+
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="reg-username" name="username" placeholder="Enter your username" autocomplete="username" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email (optional)</label>
+                            <input type="email" id="reg-email" name="email" placeholder="Enter your email" autocomplete="email">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="reg-password" name="password" placeholder="Enter your password" minlength="8" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirm-password">Confirm Password</label>
+                            <input type="password" id="reg-confirm-password" name="confirm-password" placeholder="Confirm your password" minlength="8" required>
+                        </div>
+
+                        <div class="password-strength">
+                            <div class="strength-indicator weak-password-indicator"></div> <!-- Weak: The minimum acceptable length -->
+                            <div class="strength-indicator medium-password-indicator"></div> <!-- Medium: Mix of numbers and letters -->
+                            <div class="strength-indicator strong-password-indicator"></div> <!-- Strong: Includes symbols -->
+                        </div>
+
+                        <button class="auth-button" type="submit">Register</button>
+
+                    </form>
+                    
+                    <div class="alt-container">
+                        <button class="auth-button" id="switch-a">Already Registered</button>
+                    </div>  
 
                 </div>
 
@@ -55,7 +93,29 @@
 
                     <!-- Login Form -->
 
-                    <button id="switch-b">Create Account</button>
+                    <div class="title-container">
+                        <h1 class="title">9 Letters</h1>
+                    </div>
+
+                    <form id="reg-form">
+
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="login-username" name="username" placeholder="Enter your username" autocomplete="username" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="login-password" name="password" placeholder="Enter your password" minlength="8" required>
+                        </div>
+
+                        <button class="auth-button" type="submit">Login</button>
+
+                    </form>
+                    
+                    <div class="alt-container">
+                        <button class="auth-button" id="switch-b">Create Account</button>
+                    </div>  
 
                 </div>
 
@@ -63,7 +123,7 @@
 
         </div>
 
-        <script src="js/main.js"></script>
+        <script src="js/auth.js"></script>
 
     </body>
 

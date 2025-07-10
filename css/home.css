@@ -1,3 +1,15 @@
+:root {
+  --bg-main: #18181c;
+  --bg-surface: #23232a;
+  --primary: #00bcd4;
+  --secondary: #ffeb3b;
+  --error: #fd7767;
+  --success: #4caf50;
+  --text-main: #f5f5f7;
+  --text-secondary: #b0b0bb;
+  --border: #383842;
+}
+
 /* Overlays */
 
 .message-overlay, .authentication-overlay {
@@ -48,7 +60,6 @@
 
 /* Authentication */
 
-
 .authentication-container {
     display: flex;
     flex-direction: row;
@@ -67,54 +78,184 @@
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 
-    width: 22.5vw;
-    height: 60vh;
+    width: 20vw;
+    height: 57.5vh;
+    
 }
 
 .registration-container {
     order: 0;
+    opacity: 1;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    padding-top: 16px;
 }
 
 .login-container {
     order: 1;
     opacity: 0;
-}
 
-/* TEST */
-
-
-.test {
-    width: 100vw;
-    height: 100vh;
+    height: 45vh;
 
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-
-    gap: 20px;
+    gap: 24px;
+    padding-top: 16px;
 }
 
-.button-a {
-    background-color: aqua;
-
-    width: 200px;
-    height: 200px;
-
-    border-radius: 0;
-
-    animation-duration: 1s;
-    animation-name: spin;
+.active {
+    animation: activate 0.5s ease-in-out;
 }
 
+.inactive {
+    animation: deactivate 0.5s ease-in-out;
+}
 
-@keyframes spin {
+/* Form */
+
+.title-container {
+    width: 90%;
+    height: 15%;
+
+    text-align: center;
+}
+
+.login-container > .title-container {
+    height: 30%;
+}
+
+.title {
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--text-main);
+    text-shadow: 5px 5px 10px var(--primary);
+}
+
+form {
+    width: 90%;
+    height: 60%;
+}
+
+.form-group {
+    height: 70px;
+}
+
+label {
+    position: relative;
+    bottom: 3px;
+}
+
+.sub-form-group {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+
+    width: 100%;
+    height: 100%;
+}
+
+input {
+    width: 100%;
+    height: 34px;
+    padding: 5px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.3s;
+}
+
+input:valid {
+    border-color: var(--success);
+    box-shadow: 0 0 5px var(--success);
+}
+
+input:invalid {
+    border-color: var(--error);
+    box-shadow: 0 0 5px var(--error);
+}
+
+/* Password Strength */
+
+.password-strength {
+    width: 25%;
+    height: 30px;
+
+    margin: 0 auto;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.strength-indicator {
+    width: 10px;
+    height: 10px;
+    margin-bottom: 4px;
+
+    border-radius: 50%;
+
+    background-color: var(--error);
+    box-shadow: 0 0 7px var(--error);
+    transition: all 0.3s;
+}
+
+.strength-passed {
+    background-color: var(--success);
+    box-shadow: 0 0 7px var(--success);
+}
+
+.auth-button {
+    cursor: pointer;
+    color: var(--text-main);
+    background-color: var(--bg-main);
+    border: none;
+    border-radius: 5px;
+    height: 40px;
+    width: 100%;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+.alt-container {
+    width: 90%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.login-container > .alt-container {
+    margin-bottom: 20px;
+}
+
+/* Animations */
+
+@keyframes activate {
     0% {
-        
+        opacity: 0;
+        transform: translateX(calc(20vw + 80px));
     }
-    100% {
-        transform: translate(-100%, 0);
-        animation-fill-mode: both;
-        filter: opacity(0);
+    35% {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes deactivate {
+    from {
+        opacity: 1;
+        transform: translateY(0) translateX(calc(-20vw - 80px));
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-80px) translateX(calc(-20vw - 80px));
     }
 }
