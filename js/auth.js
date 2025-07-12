@@ -1,10 +1,25 @@
+// GLOBAL VARIABLES
+const regForm = document.getElementById("reg-form");
+const loginForm = document.getElementById("login-form");
+
+// Registration Form Elements
+const regUsernameInput = document.getElementById("reg-username");
+const regPasswordInput = document.getElementById("reg-password");
+const regConfirmPasswordInput = document.getElementById("reg-confirm-password");
+const registerButton = document.getElementById("register");
+
+// Login Form Elements
+const loginUsernameInput = document.getElementById("login-username");
+const loginPasswordInput = document.getElementById("login-password");
+const loginButton = document.getElementById("login"); // TODO: Implement login functionality similar to registration :::
+
 async function registerUser() {
     let uuid;
     do {
         uuid = crypto.randomUUID();
     } while (!checkUUIDAvailability(uuid));
 
-    const username = document.getElementById("reg-username").value;
+    const username = regUsernameInput.value;
 
     let usernameAvailability = await checkUsernameAvailability(username);
     if (!usernameAvailability) {
@@ -14,18 +29,20 @@ async function registerUser() {
             printErrorMessage("", true);
         }, 5000);
 
-        document.getElementById("register").classList.add("disabled");
+        registerButton.classList.add("disabled");
+        regForm.reset();
+        resetPasswordUI();
         return;
     }
 
-    const password = document.getElementById("reg-password").value;
+    const password = regPasswordInput.value;
     const hashedPassword = await hashPassword(password);
 
     let params = new URLSearchParams();
     params.append("query", `INSERT INTO Users (userID, username, password) VALUES ('${uuid}', '${username}', '${hashedPassword}');`);
 
     executeQuery(params);
-    document.getElementById("reg-form").reset();
+    regForm.reset();
     resetPasswordUI();
 }
 
@@ -34,18 +51,20 @@ async function registerUser() {
 //
 
 function usernameValidation() {
-    const username = document.getElementById("reg-username").value;
+    const username = regUsernameInput.value;
 
     if (username.length < 4) {
         printErrorMessage("Username must be at least 4 characters long!", true);
-        document.getElementById("register").classList.add("disabled");
+        registerButton.classList.add("disabled");
     } else if (username.length == 0) {
         printErrorMessage("", true);
-        document.getElementById("register").classList.add("disabled");
+        registerButton.classList.add("disabled");
     } else {
         printErrorMessage("", true);
-        document.getElementById("register").classList.remove("disabled");
+        registerButton.classList.remove("disabled");
     }
+
+    passwordLengthValidation(regPasswordInput.value);
 }
 
 // UUID Availability Check Function
@@ -93,8 +112,6 @@ async function executeQuery(params) {
         });
 
         let result = await response.json();
-
-        console.log("Query executed successfully:", result);
         
         return result;
     } catch (err) {
@@ -107,10 +124,6 @@ async function executeQuery(params) {
 //
 
 async function hashPassword(password) {
-    console.log(typeof password);
-    console.log(password.length);
-    console.log(password);
-
     try {
         const hash = await argon2.hash({
             pass: password,
@@ -132,28 +145,38 @@ async function hashPassword(password) {
 //
 
 function passwordValidation() {
-    const password = document.getElementById("reg-password").value;
-    const confirmPassword = document.getElementById("reg-confirm-password").value;
+    const password = regPasswordInput.value;
+    const confirmPassword = regConfirmPasswordInput.value;
 
-    if (password.length > 0 && password.length < 8) {
-        printErrorMessage("Password must be at least 8 characters long!", true);
-        resetPasswordUI();
-        document.getElementById("register").classList.add("disabled");
-        return false;
-    } else if (password.length == 0) {
-        printErrorMessage("", true);
-        document.getElementById("register").classList.add("disabled");
-        return false;
-    } else {
-        document.getElementById("reg-confirm-password").setAttribute("minlength", password.length);
+    let passwordLengthValid = passwordLengthValidation(password);
+    if (!passwordLengthValid) {
+        return;
     }
 
     passwordStrength(password);
     let passwordsMatch = passwordMatch(password, confirmPassword);
     if (passwordsMatch) {
-        document.getElementById("register").classList.remove("disabled");
+        registerButton.classList.remove("disabled");
     } else {
-        document.getElementById("register").classList.add("disabled");
+        registerButton.classList.add("disabled");
+    }
+}
+
+// Password Length Validation Function
+
+function passwordLengthValidation(password) {
+    if (password.length > 0 && password.length < 8) {
+        printErrorMessage("Password must be at least 8 characters long!", true);
+        resetPasswordUI();
+        registerButton.classList.add("disabled");
+        return false;
+    } else if (password.length == 0) {
+        printErrorMessage("", true);
+        registerButton.classList.add("disabled");
+        return false;
+    } else {
+        regConfirmPasswordInput.setAttribute("minlength", password.length);
+        return true;
     }
 }
 
@@ -259,6 +282,7 @@ function passwordMatch(password, confirmPassword) {
         return false;
     } else {
         printErrorMessage("", true);
+        return true;
     }
 }
 
@@ -304,7 +328,7 @@ function switchForm() {
         loginContainer.style.opacity = "1";
         loginContainer.classList.add("active");
 
-        document.getElementById("reg-form").reset();
+        regForm.reset();
         resetPasswordUI();
 
     } else {
@@ -325,7 +349,7 @@ function switchForm() {
         regContainer.style.opacity = "1";
         regContainer.classList.add("active");
 
-        document.getElementById("login-form").reset();
+        loginForm.reset();
     }
 }
 
@@ -353,13 +377,13 @@ function toggleRegPassword() {
         if (eyeIcon.classList.contains("fa-eye")) { // If the eye icon is currently showing an open eye :::
             eyeIcon.classList.remove("fa-eye");
             eyeIcon.classList.add("fa-eye-slash");
-            document.getElementById("reg-password").type = "text";
-            document.getElementById("reg-confirm-password").type = "text";
+            regPasswordInput.type = "text";
+            regConfirmPasswordInput.type = "text";
         } else { // If the eye icon is currently showing a closed eye :::
             eyeIcon.classList.remove("fa-eye-slash");
             eyeIcon.classList.add("fa-eye");
-            document.getElementById("reg-password").type = "password";
-            document.getElementById("reg-confirm-password").type = "password";
+            regPasswordInput.type = "password";
+            regConfirmPasswordInput.type = "password";
         }
 
         eyeIcon.classList.remove("changing");
@@ -377,11 +401,11 @@ function toggleLoginPassword() {
         if (eyeIcon.classList.contains("fa-eye")) { // If the eye icon is currently showing an open eye :::
             eyeIcon.classList.remove("fa-eye");
             eyeIcon.classList.add("fa-eye-slash");
-            document.getElementById("login-password").type = "text";
+            loginPasswordInput.type = "text";
         } else { // If the eye icon is currently showing a closed eye :::
             eyeIcon.classList.remove("fa-eye-slash");
             eyeIcon.classList.add("fa-eye");
-            document.getElementById("login-password").type = "password";
+            loginPasswordInput.type = "password";
         }
 
         eyeIcon.classList.remove("changing");
@@ -396,18 +420,18 @@ document.getElementById("switch-a").addEventListener("click", switchForm);
 document.getElementById("switch-b").addEventListener("click", switchForm);
 
 // Username Validation
-document.getElementById("reg-username").addEventListener("input", usernameValidation);
+regUsernameInput.addEventListener("input", usernameValidation);
 
 // Toggling password visibility
 document.getElementById("reg-toggle-password").addEventListener("click", togglePasswordVisibility);
 document.getElementById("login-toggle-password").addEventListener("click", togglePasswordVisibility);
 
 // Password Validation
-document.getElementById("reg-password").addEventListener("input", passwordValidation);
-document.getElementById("reg-confirm-password").addEventListener("input", passwordValidation);
+regPasswordInput.addEventListener("input", passwordValidation);
+regConfirmPasswordInput.addEventListener("input", passwordValidation);
 
 // Registration Form Submission
-document.getElementById("reg-form").addEventListener("submit", function(event) {
+regForm.addEventListener("submit", function(event) {
     event.preventDefault();
     registerUser();
 });

@@ -105,6 +105,8 @@
     align-items: center;
     gap: 16px;
     padding-top: 16px;
+
+    pointer-events: none;
 }
 
 .active {
@@ -163,6 +165,7 @@ label {
 
 input {
     width: 100%;
+    min-width: 7ch;
     height: 34px;
     padding: 5px;
     border: 1px solid var(--border);
@@ -180,7 +183,7 @@ input:valid {
 input:invalid {
     border-color: var(--error);
     box-shadow: 0 0 5px var(--error);
-}
+}    
 
 .password-group {
     display: flex;
@@ -328,14 +331,13 @@ input:invalid {
 #register.disabled {
     cursor: not-allowed;
 }
-    
 
 /* Animations */
 
 @keyframes activate {
     0% {
         opacity: 0;
-        transform: translateX(calc(20vw + 80px));
+        transform: translateX(calc(20vw + 84px));
     }
     35% {
         opacity: 0;
@@ -347,12 +349,18 @@ input:invalid {
 }
 
 @keyframes deactivate {
-    from {
+    0% {
         opacity: 1;
-        transform: translateY(0) translateX(calc(-20vw - 80px));
+        transform: translateX(calc(-20vw - 84px));
+    }
+    35% {
+        opacity: 0;
+    }
+    99% {
+        transform: translateX(calc(-40vw - 168px));
     }
     to {
         opacity: 0;
-        transform: translateY(-80px) translateX(calc(-20vw - 80px));
+        transform: translateX(0);
     }
 }
