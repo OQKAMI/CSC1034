@@ -1,16 +1,165 @@
-function registerUser() {
-    
-}
+async function registerUser() {
+    let uuid;
+    do {
+        uuid = crypto.randomUUID();
+    } while (!checkUUIDAvailability(uuid));
 
-function passwordStrength() {
+    const username = document.getElementById("reg-username").value;
 
-    const password = document.getElementById("reg-password").value;
-    
-    if (password.length < 8) {
-        resetPasswordUI();
+    let usernameAvailability = await checkUsernameAvailability(username);
+    if (!usernameAvailability) {
+        printErrorMessage("Username is already taken!", true);
+
+        setTimeout(() => {
+            printErrorMessage("", true);
+        }, 5000);
+
+        document.getElementById("register").classList.add("disabled");
         return;
     }
 
+    const password = document.getElementById("reg-password").value;
+    const hashedPassword = await hashPassword(password);
+
+    let params = new URLSearchParams();
+    params.append("query", `INSERT INTO Users (userID, username, password) VALUES ('${uuid}', '${username}', '${hashedPassword}');`);
+
+    executeQuery(params);
+    document.getElementById("reg-form").reset();
+    resetPasswordUI();
+}
+
+//
+// Username Validation Main Function
+//
+
+function usernameValidation() {
+    const username = document.getElementById("reg-username").value;
+
+    if (username.length < 4) {
+        printErrorMessage("Username must be at least 4 characters long!", true);
+        document.getElementById("register").classList.add("disabled");
+    } else if (username.length == 0) {
+        printErrorMessage("", true);
+        document.getElementById("register").classList.add("disabled");
+    } else {
+        printErrorMessage("", true);
+        document.getElementById("register").classList.remove("disabled");
+    }
+}
+
+// UUID Availability Check Function
+// While the likelyhood of UUID collisions is extremely low, this function can be used to check if a UUID is already in use.
+
+async function checkUUIDAvailability(uuid) {
+    let params = new URLSearchParams();
+    params.append("query", `SELECT CASE WHEN COUNT(*) = 0 THEN 'AVAILABLE' ELSE 'UNAVAILABLE' END AS availability FROM Users WHERE userID = '${uuid}';`);
+
+    executeQuery(params)
+        .then(result => {
+            if (result.availability != "AVAILABLE") {
+                return false;
+            } 
+        });
+    
+    return true;
+}
+
+async function checkUsernameAvailability(username) {
+    let params = new URLSearchParams();
+    params.append("query", `SELECT CASE WHEN COUNT(*) = 0 THEN 'AVAILABLE' ELSE 'UNAVAILABLE' END AS availability FROM Users WHERE username = '${username}';`);
+
+    executeQuery(params)
+        .then(result => {
+            if (result.availability != "AVAILABLE") {
+                return false;
+            }
+            else {
+                return true;
+            }
+        })
+}
+
+//
+// Database Query Execution Function
+//
+
+async function executeQuery(params) {
+    let url = "https://amakay01.webhosting1.eeecs.qub.ac.uk/dbConnector.php";
+    try {
+        let response = await fetch(url, {
+            method: "POST",
+            body: params,
+        });
+
+        let result = await response.json();
+
+        console.log("Query executed successfully:", result);
+        
+        return result;
+    } catch (err) {
+        console.error("Error executing query:", error);
+    }
+}
+
+//
+// Password Hashing Function using Argon2
+//
+
+async function hashPassword(password) {
+    console.log(typeof password);
+    console.log(password.length);
+    console.log(password);
+
+    try {
+        const hash = await argon2.hash({
+            pass: password,
+            type: argon2.ArgonType.Argon2id,
+            salt: new Uint8Array(8),
+            time: 3,
+            mem: 64 * 1024, // 64 MB
+            parallelism: 1,
+            hashLen: 32, // 32 bytes
+        });
+        return hash.encoded;
+    } catch (err) {
+        console.error("Error hashing password:", err);
+    }
+}
+
+//
+// Password Validation Main Function
+//
+
+function passwordValidation() {
+    const password = document.getElementById("reg-password").value;
+    const confirmPassword = document.getElementById("reg-confirm-password").value;
+
+    if (password.length > 0 && password.length < 8) {
+        printErrorMessage("Password must be at least 8 characters long!", true);
+        resetPasswordUI();
+        document.getElementById("register").classList.add("disabled");
+        return false;
+    } else if (password.length == 0) {
+        printErrorMessage("", true);
+        document.getElementById("register").classList.add("disabled");
+        return false;
+    }
+
+    passwordStrength(password);
+    let passwordsMatch = passwordMatch(password, confirmPassword);
+    if (passwordsMatch) {
+        document.getElementById("register").classList.remove("disabled");
+    } else {
+        document.getElementById("register").classList.add("disabled");
+    }
+}
+
+//
+// Password strength validation and UI updates
+//
+
+function passwordStrength(password) {
     const containsLetters = /[a-zA-Z]/.test(password);
     const containsNumbers = /[0-9]/.test(password);
     const containsSymbols = /[^a-zA-Z0-9]/.test(password);
@@ -29,7 +178,14 @@ function passwordStrength() {
     }
     
     updatePasswordUI(strength);
+    if (strength === "invalid") {
+        printErrorMessage("", true);
+    }
 }
+
+//
+// Update Password Strength UI based on the strength level
+//
 
 function updatePasswordUI(strength) {
     const elements = {
@@ -87,24 +243,35 @@ function updatePasswordUI(strength) {
     })
 }
 
+// Reset Password UI to default state (INVALID)
+
 function resetPasswordUI() {
     updatePasswordUI("invalid");
 }
 
-function passwordMatch() {
-    const password = document.getElementById("reg-password").value;
-    const confirmPassword = document.getElementById("reg-confirm-password").value;
+// Password match validation
 
-    if (password !== confirmPassword) {
-        const alertMessage = document.getElementById("reg-alert-message");
-        alertMessage.textContent = "Passwords do not match!";
+function passwordMatch(password, confirmPassword) {
+    if (!(password === confirmPassword)) {
+        printErrorMessage("Passwords do not match!", true);
+        return false;
     } else {
-        const alertMessage = document.getElementById("reg-alert-message");
-        alertMessage.textContent = "";
+        printErrorMessage("", true);
+        return true;
     }
 }
 
-// ANIMATIONS AND TRANSITIONS FOR THE AUTHENTICATION FORMS
+// Print error message in the registration or login form
+
+function printErrorMessage(message, registration) {
+    const alertMessage = document.getElementById(registration ? "reg-alert-message" : "login-alert-message");
+    
+    alertMessage.textContent = message;
+}
+
+//
+// Switching between registration and login forms
+//
 
 function switchForm() {
     const regContainer = document.getElementById("registration-container");
@@ -137,6 +304,7 @@ function switchForm() {
         loginContainer.classList.add("active");
 
         document.getElementById("reg-form").reset();
+        resetPasswordUI();
 
     } else {
         
@@ -158,8 +326,9 @@ function switchForm() {
 
         document.getElementById("login-form").reset();
     }
-
 }
+
+// Toggle Password Visibility
 
 function togglePasswordVisibility() {
     
@@ -171,6 +340,8 @@ function togglePasswordVisibility() {
         toggleLoginPassword();
     }
 }
+
+// Toggle Password Visibility for Registration Form
 
 function toggleRegPassword() {
     const eyeIcon = document.getElementById("reg-eye-icon");
@@ -193,6 +364,8 @@ function toggleRegPassword() {
         eyeIcon.classList.remove("changing");
     }, 100);
 }
+
+// Toggle Password Visibility for Login Form
 
 function toggleLoginPassword() { 
     const eyeIcon = document.getElementById("login-eye-icon");
@@ -221,13 +394,19 @@ function toggleLoginPassword() {
 document.getElementById("switch-a").addEventListener("click", switchForm);
 document.getElementById("switch-b").addEventListener("click", switchForm);
 
+// Username Validation
+document.getElementById("reg-username").addEventListener("input", usernameValidation);
+
 // Toggling password visibility
 document.getElementById("reg-toggle-password").addEventListener("click", togglePasswordVisibility);
 document.getElementById("login-toggle-password").addEventListener("click", togglePasswordVisibility);
 
-// Password strength validation
-document.getElementById("reg-password").addEventListener("input", passwordStrength);
+// Password Validation
+document.getElementById("reg-password").addEventListener("input", passwordValidation);
+document.getElementById("reg-confirm-password").addEventListener("input", passwordValidation);
 
-// Password match validation
-document.getElementById("reg-password").addEventListener("input", passwordMatch);
-document.getElementById("reg-confirm-password").addEventListener("input", passwordMatch);
+// Registration Form Submission
+document.getElementById("reg-form").addEventListener("submit", function(event) {
+    event.preventDefault();
+    registerUser();
+});

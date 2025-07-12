@@ -325,6 +325,11 @@ input:invalid {
     margin-top: 10px;
 }
 
+#register.disabled {
+    cursor: not-allowed;
+}
+    
+
 /* Animations */
 
 @keyframes activate {

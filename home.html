@@ -9,6 +9,8 @@
         <link rel="stylesheet" type="text/css" href="css/home.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
+        <script src="https://unpkg.com/argon2-browser@1.18.0/dist/argon2-bundled.min.js"></script>
+
         <title>Home - 9 Letters</title>
 
     </head>
@@ -56,7 +58,7 @@
 
                         <div class="form-group">
                             <label for="username">Username</label>
-                            <input type="text" id="reg-username" name="username" placeholder="ookami" autocomplete="username" required>
+                            <input type="text" id="reg-username" name="username" placeholder="Enter your username" autocomplete="username" minlength="4" required>
                         </div>
 
                         <div class="form-group">
@@ -95,7 +97,7 @@
 
                         <div class="reg-placeholder"></div>
 
-                        <button class="auth-button" id="register" type="submit">Register</button>
+                        <button class="auth-button disabled" id="register" type="submit">Register</button>
                         <button class="auth-button" id="switch-a" type="button">Already Registered</button>
 
                     </form>
@@ -120,7 +122,7 @@
                         <div class="form-group">
                             <label for="password">Password</label>
                             <div class="password-group">
-                                <input type="password" id="login-password" name="password" placeholder="Enter your password" minlength="8" required>
+                                <input type="password" id="login-password" name="password" placeholder="Enter your password" required>
                                 <button id="login-toggle-password" type="button"><i id="login-eye-icon" class="fa-solid fa-eye"></i></button>
                             </div>
                         </div>
