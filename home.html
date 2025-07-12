@@ -7,6 +7,7 @@
 
         <link rel="stylesheet" type="text/css" href="css/default_style.css">
         <link rel="stylesheet" type="text/css" href="css/home.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
         <title>Home - 9 Letters</title>
 
@@ -55,17 +56,15 @@
 
                         <div class="form-group">
                             <label for="username">Username</label>
-                            <input type="text" id="reg-username" name="username" placeholder="Enter your username" autocomplete="username" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="email">Email (optional)</label>
-                            <input type="email" id="reg-email" name="email" placeholder="Enter your email" autocomplete="email">
+                            <input type="text" id="reg-username" name="username" placeholder="ookami" autocomplete="username" required>
                         </div>
 
                         <div class="form-group">
                             <label for="password">Password</label>
-                            <input type="password" id="reg-password" name="password" placeholder="Enter your password" minlength="8" required>
+                            <div class="password-group">
+                                <input type="password" id="reg-password" name="password" placeholder="Enter your password" minlength="8" required>
+                                <button id="reg-toggle-password" type="button"><i id="reg-eye-icon" class="fa-solid fa-eye"></i></button>
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -73,19 +72,33 @@
                             <input type="password" id="reg-confirm-password" name="confirm-password" placeholder="Confirm your password" minlength="8" required>
                         </div>
 
-                        <div class="password-strength">
-                            <div class="strength-indicator weak-password-indicator"></div> <!-- Weak: The minimum acceptable length -->
-                            <div class="strength-indicator medium-password-indicator"></div> <!-- Medium: Mix of numbers and letters -->
-                            <div class="strength-indicator strong-password-indicator"></div> <!-- Strong: Includes symbols -->
+                        <div class="password-strength-container">
+                            <div class="password-strength-label">
+                                <label id="password-strength-label">Password Strength</label>
+                            </div>
+
+                            <div class="password-strength" id="password-strength">
+                                <div id="weak-password-indicator" class="strength-indicator"></div> <!-- Weak: The minimum acceptable length -->
+                                <div id="medium-password-indicator" class="strength-indicator"></div> <!-- Medium: Mix of numbers and letters -->
+                                <div id="strong-password-indicator" class="strength-indicator"></div> <!-- Strong: Includes symbols -->
+                            </div>
                         </div>
 
-                        <button class="auth-button" type="submit">Register</button>
+                        
+
+                        <div class="alert-container">
+                            <div class="alert-message" id="reg-alert-message">
+                                <!-- Registration alert messages will be displayed here -->
+                                 Test
+                            </div>
+                        </div>
+
+                        <div class="reg-placeholder"></div>
+
+                        <button class="auth-button" id="register" type="submit">Register</button>
+                        <button class="auth-button" id="switch-a" type="button">Already Registered</button>
 
                     </form>
-                    
-                    <div class="alt-container">
-                        <button class="auth-button" id="switch-a">Already Registered</button>
-                    </div>  
 
                 </div>
 
@@ -97,25 +110,33 @@
                         <h1 class="title">9 Letters</h1>
                     </div>
 
-                    <form id="reg-form">
+                    <form id="login-form">
 
-                        <div class="form-group">
+                        <div class="form-group" id="username-login-group">
                             <label for="username">Username</label>
                             <input type="text" id="login-username" name="username" placeholder="Enter your username" autocomplete="username" required>
                         </div>
 
                         <div class="form-group">
                             <label for="password">Password</label>
-                            <input type="password" id="login-password" name="password" placeholder="Enter your password" minlength="8" required>
+                            <div class="password-group">
+                                <input type="password" id="login-password" name="password" placeholder="Enter your password" minlength="8" required>
+                                <button id="login-toggle-password" type="button"><i id="login-eye-icon" class="fa-solid fa-eye"></i></button>
+                            </div>
                         </div>
 
-                        <button class="auth-button" type="submit">Login</button>
+                        <div class="alert-container">
+                            <div class="alert-message" id="login-alert-message">
+                                Test
+                            </div>
+                        </div>
+
+                        <div class="login-placeholder"></div>
+
+                        <button class="auth-button" id="login" type="submit">Login</button>
+                        <button class="auth-button" id="switch-b" type="button">Create Account</button>
 
                     </form>
-                    
-                    <div class="alt-container">
-                        <button class="auth-button" id="switch-b">Create Account</button>
-                    </div>  
 
                 </div>
 
