@@ -191,7 +191,7 @@ input:invalid {
     align-items: center;
     justify-content: space-between;
 
-    gap: 14px;
+    gap: 10px;
     margin-right: 5px;
 }
 
@@ -201,6 +201,8 @@ input:invalid {
     color: var(--text-secondary);
     padding: 8px;
     cursor: pointer;
+    max-width: 15px;
+    margin-right: 8px;
 }
 
 #reg-eye-icon, #login-eye-icon {
