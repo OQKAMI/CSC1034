@@ -144,6 +144,8 @@ function passwordValidation() {
         printErrorMessage("", true);
         document.getElementById("register").classList.add("disabled");
         return false;
+    } else {
+        document.getElementById("reg-confirm-password").setAttribute("minlength", password.length);
     }
 
     passwordStrength(password);
@@ -257,7 +259,6 @@ function passwordMatch(password, confirmPassword) {
         return false;
     } else {
         printErrorMessage("", true);
-        return true;
     }
 }
 
