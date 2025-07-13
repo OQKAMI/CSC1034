@@ -13,6 +13,49 @@ const loginUsernameInput = document.getElementById("login-username");
 const loginPasswordInput = document.getElementById("login-password");
 const loginButton = document.getElementById("login"); // TODO: Implement login functionality similar to registration :::
 
+// Session Clearance
+startSessionCleanup(); // Start session cleanup on page load
+autoLogin(); // Attempt auto-login on page load
+
+async function startSessionCleanup() {
+    const cleanup = async () => {
+        try {
+            await deleteSession();
+        } catch (err) {
+            console.error("Error during session cleanup:", err);
+        }
+    };
+
+    await cleanup();
+    setInterval(cleanup, 1000 * 60 * 60); // Every hour
+}
+
+function autoLogin() {
+    let sessionData = getSessionData();
+    if (sessionData) { 
+        sessionData = JSON.parse(sessionData);
+        let currentTime = new Date().toISOString();
+
+        if (new Date(sessionData.expiresAt) > new Date(currentTime)) {
+            // Session valid, proceed with auto-login
+            console.log("Auto-login successful for user:", sessionData.userID);
+            localStorage.setItem("authenticatedUser", sessionData.userID);
+            // Hide auth forms
+            document.querySelector(".authentication-overlay").style.display = "none";
+        } else {
+            // Session expired, clear session data
+            console.log("Session expired, clearing session data.");
+            clearSessionData();
+            document.querySelector(".authentication-overlay").style.display = "block";
+        }
+    }
+    
+}
+
+//
+// Registration User Function
+//
+
 async function registerUser() {
     let uuid;
     do {
@@ -44,8 +87,142 @@ async function registerUser() {
     executeQuery(params);
     regForm.reset();
     resetPasswordUI();
+
+    await createSession(uuid);
+    autoLogin();
 }
 
+//
+// Login User Function
+//
+
+async function loginUser() {
+    const username = loginUsernameInput.value.trim();
+    const password = loginPasswordInput.value.trim();
+
+    let params = new URLSearchParams();
+    params.append("query", `SELECT userID, password FROM Users WHERE username = '${username}';`);
+    let result = await executeQuery(params);
+
+    console.log("Login result:", result);
+
+    if (result && result.data[0].password) {
+        try {
+            const isValid = await argon2.verify({
+            pass: password,
+            encoded: result.data[0].password
+            });
+
+            console.log("Password verification result:", isValid);
+
+            if (isValid) {
+                console.log("Password verified successfully.");
+                await createSession(result.userID);
+                autoLogin();
+            }
+        } catch (err) {
+            printErrorMessage("Invalid username or password!", false);
+            setTimeout(() => {
+                    printErrorMessage("", false);
+                }, 5000);
+            loginForm.reset();
+        }       
+    }
+}
+
+//
+// Create a new session for the user
+//
+
+async function createSession(userID) {
+    let uuid;
+    
+    do {
+        uuid = crypto.randomUUID();
+    } while (!checkUUIDAvailability(uuid, "Sessions"));
+
+    let params = new URLSearchParams();
+    params.append("query", `INSERT INTO Sessions (sessionID, userID) VALUES ('${uuid}', '${userID}');`);
+
+    await executeQuery(params)
+        .then(() => {
+            console.log("Session created successfully.");
+        })
+        .catch(err => {
+            console.error("Error creating session:", err);
+        });
+
+    storeSessionData(userID, uuid);
+}
+
+//
+// Retrieve expired session IDs from the database
+//
+
+async function getValidSessionIDs() {
+    let params = new URLSearchParams();
+    params.append("query", `SELECT sessionID FROM Sessions;`);
+
+    return await executeQuery(params)
+}
+
+//
+// Delete expired sessions from the database and clear localStorage if the local session is amongst the expired ones
+//
+
+async function deleteSession() {
+    let params = new URLSearchParams();
+    params.append("query", `DELETE FROM Sessions WHERE expiresAt < CURRENT_TIMESTAMP;`);
+
+    await executeQuery(params);
+
+    clearSessionData();
+}
+
+//
+// Store session data in localStorage
+//
+
+function storeSessionData(userID, sessionID) {
+    localStorage.setItem("sessionData", JSON.stringify({
+        userID: userID,
+        sessionID: sessionID,
+    }));
+}
+
+//
+// Retrieve session data from localStorage
+//
+
+function getSessionData() {
+    return localStorage.getItem("sessionData");
+}
+
+//
+// Clear session data from localStorage if the local session is amongst the expired ones
+//
+
+async function clearSessionData() {
+    const result = await getValidSessionIDs();
+    const localSession = getSessionData();
+    let localSessionID = localSession ? JSON.parse(localSession).sessionID : null;
+    const validSessionIDs = result?.data || [];
+
+    if (!validSessionIDs || validSessionIDs.length === 0) {
+        console.log("No valid sessions found, clearing session data.");
+        localStorage.removeItem("sessionData");
+        localStorage.removeItem("authenticatedUser");
+        return;
+    }
+
+    const isValidSession = validSessionIDs.some(session => session.sessionID === localSessionID);
+
+    if (!isValidSession) {
+        console.log("Session is expired or doesn't exist - ", new Date().toISOString());
+        localStorage.removeItem("sessionData");
+        localStorage.removeItem("authenticatedUser");
+    }
+}
 //
 // Username Validation Main Function
 //
@@ -67,12 +244,13 @@ function usernameValidation() {
     passwordLengthValidation(regPasswordInput.value);
 }
 
+//
 // UUID Availability Check Function
 // While the likelyhood of UUID collisions is extremely low, this function can be used to check if a UUID is already in use.
 
-async function checkUUIDAvailability(uuid) {
+async function checkUUIDAvailability(uuid, table = "Users") {
     let params = new URLSearchParams();
-    params.append("query", `SELECT CASE WHEN COUNT(*) = 0 THEN 'AVAILABLE' ELSE 'UNAVAILABLE' END AS availability FROM Users WHERE userID = '${uuid}';`);
+    params.append("query", `SELECT CASE WHEN COUNT(*) = 0 THEN 'AVAILABLE' ELSE 'UNAVAILABLE' END AS availability FROM ${table} WHERE userID = '${uuid}';`);
 
     executeQuery(params)
         .then(result => {
@@ -88,15 +266,13 @@ async function checkUsernameAvailability(username) {
     let params = new URLSearchParams();
     params.append("query", `SELECT CASE WHEN COUNT(*) = 0 THEN 'AVAILABLE' ELSE 'UNAVAILABLE' END AS availability FROM Users WHERE username = '${username}';`);
 
-    executeQuery(params)
-        .then(result => {
-            if (result.availability != "AVAILABLE") {
-                return false;
-            }
-            else {
-                return true;
-            }
-        })
+    let result = await executeQuery(params);
+
+    if (result.data[0].availability != "AVAILABLE") {
+        return false;
+    }
+
+    return true;        
 }
 
 //
@@ -115,7 +291,7 @@ async function executeQuery(params) {
         
         return result;
     } catch (err) {
-        console.error("Error executing query:", error);
+        console.error("Error executing query:", err);
     }
 }
 
@@ -125,11 +301,14 @@ async function executeQuery(params) {
 
 async function hashPassword(password) {
     try {
+        const salt = new Uint8Array(16);
+        crypto.getRandomValues(salt);
+
         const hash = await argon2.hash({
             pass: password,
             type: argon2.ArgonType.Argon2id,
-            salt: new Uint8Array(8),
             time: 3,
+            salt: salt,
             mem: 64 * 1024, // 64 MB
             parallelism: 1,
             hashLen: 32, // 32 bytes
@@ -162,7 +341,9 @@ function passwordValidation() {
     }
 }
 
+//
 // Password Length Validation Function
+//
 
 function passwordLengthValidation(password) {
     if (password.length > 0 && password.length < 8) {
@@ -434,4 +615,10 @@ regConfirmPasswordInput.addEventListener("input", passwordValidation);
 regForm.addEventListener("submit", function(event) {
     event.preventDefault();
     registerUser();
+});
+
+loginForm.addEventListener("submit", function(event) {
+    event.preventDefault();
+    console.log("Login form submitted");
+    loginUser();
 });
