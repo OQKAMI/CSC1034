@@ -158,6 +158,7 @@ async function createSession(userID) {
 //
 // Retrieve expired session IDs from the database
 //
+// Change
 
 async function getValidSessionIDs() {
     let params = new URLSearchParams();
