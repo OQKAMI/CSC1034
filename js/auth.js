@@ -1,304 +1,87 @@
-// GLOBAL VARIABLES
-const regForm = document.getElementById("reg-form");
-const loginForm = document.getElementById("login-form");
+import { isUsernameAvailable, insertUser } from "./database.js";
+import RegValidator from "./home/validation.js";
+import { updateConfirmPasswordLength, updatePasswordUI, resetPasswordUI } from "./home/validation.js";
+import FormUI from "./home/formUI.js";
 
-// Registration Form Elements
-const regUsernameInput = document.getElementById("reg-username");
-const regPasswordInput = document.getElementById("reg-password");
-const regConfirmPasswordInput = document.getElementById("reg-confirm-password");
-const registerButton = document.getElementById("register");
+const formUI = new FormUI();
+const regValidator = new RegValidator();
 
-// Login Form Elements
-const loginUsernameInput = document.getElementById("login-username");
-const loginPasswordInput = document.getElementById("login-password");
-const loginButton = document.getElementById("login"); // TODO: Implement login functionality similar to registration :::
-
-// Session Clearance
-startSessionCleanup(); // Start session cleanup on page load
-autoLogin(); // Attempt auto-login on page load
-
-async function startSessionCleanup() {
-    const cleanup = async () => {
-        try {
-            await deleteSession();
-        } catch (err) {
-            console.error("Error during session cleanup:", err);
-        }
-    };
-
-    await cleanup();
-    setInterval(cleanup, 1000 * 60 * 60); // Every hour
-}
-
-function autoLogin() {
-    let sessionData = getSessionData();
-    if (sessionData) { 
-        sessionData = JSON.parse(sessionData);
-        let currentTime = new Date().toISOString();
-
-        if (new Date(sessionData.expiresAt) > new Date(currentTime)) {
-            // Session valid, proceed with auto-login
-            console.log("Auto-login successful for user:", sessionData.userID);
-            localStorage.setItem("authenticatedUser", sessionData.userID);
-            // Hide auth forms
-            document.querySelector(".authentication-overlay").style.display = "none";
-        } else {
-            // Session expired, clear session data
-            console.log("Session expired, clearing session data.");
-            clearSessionData();
-            document.querySelector(".authentication-overlay").style.display = "block";
-        }
-    }
-    
-}
-
-//
-// Registration User Function
-//
+const elements = {
+    registerButton: document.getElementById("register"),
+    regErrorDisplay: document.getElementById("reg-alert-message"),
+    loginErrorDisplay: document.getElementById("login-alert-message"),
+};
 
 async function registerUser() {
-    let uuid;
-    do {
-        uuid = crypto.randomUUID();
-    } while (!checkUUIDAvailability(uuid));
+    const userID = crypto.randomUUID();
+    const username = document.getElementById("reg-username").value.trim();
+    const password = document.getElementById("reg-password").value;
 
-    const username = regUsernameInput.value;
-
-    let usernameAvailability = await checkUsernameAvailability(username);
-    if (!usernameAvailability) {
-        printErrorMessage("Username is already taken!", true);
-
+    const isAvailable = await isUsernameAvailable(username);
+    if (!isAvailable) {
+        formUI.resetForms();
+        printError("Username unavailable");
         setTimeout(() => {
-            printErrorMessage("", true);
-        }, 5000);
-
-        registerButton.classList.add("disabled");
-        regForm.reset();
-        resetPasswordUI();
+            clearError();
+        }, 3000)
         return;
     }
 
-    const password = regPasswordInput.value;
     const hashedPassword = await hashPassword(password);
-
-    let params = new URLSearchParams();
-    params.append("query", `INSERT INTO Users (userID, username, password) VALUES ('${uuid}', '${username}', '${hashedPassword}');`);
-
-    executeQuery(params);
-    regForm.reset();
-    resetPasswordUI();
-
-    await createSession(uuid);
-    autoLogin();
-}
-
-//
-// Login User Function
-//
-
-async function loginUser() {
-    const username = loginUsernameInput.value.trim();
-    const password = loginPasswordInput.value.trim();
-
-    let params = new URLSearchParams();
-    params.append("query", `SELECT userID, password FROM Users WHERE username = '${username}';`);
-    let result = await executeQuery(params);
-
-    console.log("Login result:", result);
-
-    if (result && result.data[0].password) {
-        try {
-            const isValid = await argon2.verify({
-            pass: password,
-            encoded: result.data[0].password
-            });
-
-            console.log("Password verification result:", isValid);
-
-            if (isValid) {
-                console.log("Password verified successfully.");
-                await createSession(result.userID);
-                autoLogin();
-            }
-        } catch (err) {
-            printErrorMessage("Invalid username or password!", false);
-            setTimeout(() => {
-                    printErrorMessage("", false);
-                }, 5000);
-            loginForm.reset();
-        }       
-    }
-}
-
-//
-// Create a new session for the user
-//
-
-async function createSession(userID) {
-    let uuid;
-    
-    do {
-        uuid = crypto.randomUUID();
-    } while (!checkUUIDAvailability(uuid, "Sessions"));
-
-    let params = new URLSearchParams();
-    params.append("query", `INSERT INTO Sessions (sessionID, userID) VALUES ('${uuid}', '${userID}');`);
-
-    await executeQuery(params)
-        .then(() => {
-            console.log("Session created successfully.");
-        })
-        .catch(err => {
-            console.error("Error creating session:", err);
-        });
-
-    storeSessionData(userID, uuid);
-}
-
-//
-// Retrieve expired session IDs from the database
-//
-// Change
-
-async function getValidSessionIDs() {
-    let params = new URLSearchParams();
-    params.append("query", `SELECT sessionID FROM Sessions;`);
-
-    return await executeQuery(params)
-}
-
-//
-// Delete expired sessions from the database and clear localStorage if the local session is amongst the expired ones
-//
-
-async function deleteSession() {
-    let params = new URLSearchParams();
-    params.append("query", `DELETE FROM Sessions WHERE expiresAt < CURRENT_TIMESTAMP;`);
-
-    await executeQuery(params);
-
-    clearSessionData();
-}
-
-//
-// Store session data in localStorage
-//
-
-function storeSessionData(userID, sessionID) {
-    localStorage.setItem("sessionData", JSON.stringify({
-        userID: userID,
-        sessionID: sessionID,
-    }));
-}
-
-//
-// Retrieve session data from localStorage
-//
-
-function getSessionData() {
-    return localStorage.getItem("sessionData");
-}
-
-//
-// Clear session data from localStorage if the local session is amongst the expired ones
-//
-
-async function clearSessionData() {
-    const result = await getValidSessionIDs();
-    const localSession = getSessionData();
-    let localSessionID = localSession ? JSON.parse(localSession).sessionID : null;
-    const validSessionIDs = result?.data || [];
-
-    if (!validSessionIDs || validSessionIDs.length === 0) {
-        console.log("No valid sessions found, clearing session data.");
-        localStorage.removeItem("sessionData");
-        localStorage.removeItem("authenticatedUser");
+    if (!hashedPassword) {
+        printError("Error hashing password. Please try again.");
+        setTimeout(() => {
+            clearError();
+        }, 3000);
         return;
     }
 
-    const isValidSession = validSessionIDs.some(session => session.sessionID === localSessionID);
-
-    if (!isValidSession) {
-        console.log("Session is expired or doesn't exist - ", new Date().toISOString());
-        localStorage.removeItem("sessionData");
-        localStorage.removeItem("authenticatedUser");
+    const insertResult = await insertUser(userID, username, hashedPassword);
+    if (insertResult.error) {
+        printError("Error registering user. Please try again.");
+        setTimeout(() => {
+            clearError();
+        }, 3000);
+        return;
     }
+
+    formUI.resetForms();
+    clearError();
 }
-//
-// Username Validation Main Function
-//
 
-function usernameValidation() {
-    const username = regUsernameInput.value;
+async function validateUsername() {
+    const result = await regValidator.isUsernameValid();
+    console.log("Username validation result:", result);
 
-    if (username.length < 4) {
-        printErrorMessage("Username must be at least 4 characters long!", true);
-        registerButton.classList.add("disabled");
-    } else if (username.length == 0) {
-        printErrorMessage("", true);
-        registerButton.classList.add("disabled");
+    if (!result.isValid) {
+        printError(result.error);
     } else {
-        printErrorMessage("", true);
-        registerButton.classList.remove("disabled");
-    }
-
-    passwordLengthValidation(regPasswordInput.value);
-}
-
-//
-// UUID Availability Check Function
-// While the likelyhood of UUID collisions is extremely low, this function can be used to check if a UUID is already in use.
-
-async function checkUUIDAvailability(uuid, table = "Users") {
-    let params = new URLSearchParams();
-    params.append("query", `SELECT CASE WHEN COUNT(*) = 0 THEN 'AVAILABLE' ELSE 'UNAVAILABLE' END AS availability FROM ${table} WHERE userID = '${uuid}';`);
-
-    executeQuery(params)
-        .then(result => {
-            if (result.availability != "AVAILABLE") {
-                return false;
-            } 
-        });
-    
-    return true;
-}
-
-async function checkUsernameAvailability(username) {
-    let params = new URLSearchParams();
-    params.append("query", `SELECT CASE WHEN COUNT(*) = 0 THEN 'AVAILABLE' ELSE 'UNAVAILABLE' END AS availability FROM Users WHERE username = '${username}';`);
-
-    let result = await executeQuery(params);
-
-    if (result.data[0].availability != "AVAILABLE") {
-        return false;
-    }
-
-    return true;        
-}
-
-//
-// Database Query Execution Function
-//
-
-async function executeQuery(params) {
-    let url = "https://amakay01.webhosting1.eeecs.qub.ac.uk/dbConnector.php";
-    try {
-        let response = await fetch(url, {
-            method: "POST",
-            body: params,
-        });
-
-        let result = await response.json();
-        
-        return result;
-    } catch (err) {
-        console.error("Error executing query:", err);
+        clearError();
     }
 }
 
-//
-// Password Hashing Function using Argon2
-//
+function validatePassword() {
+    const result = regValidator.isPasswordValid();
+    console.log("Password validation result:", result);
+
+    if (result.isValid) {
+        updatePasswordUI(result.strength);
+        updateConfirmPasswordLength(result.passwordLength);
+        clearError();
+    } else {
+        resetPasswordUI();
+        updateConfirmPasswordLength(result.passwordLength);
+        printError(result.error);
+        return;
+    }
+
+    if (regValidator.passwordMismatch()) {
+        disableRegisterButton();
+        return;
+    } else {
+        enableRegisterButton();
+    }
+}
 
 async function hashPassword(password) {
     try {
@@ -317,309 +100,56 @@ async function hashPassword(password) {
         return hash.encoded;
     } catch (err) {
         console.error("Error hashing password:", err);
+        return null;
     }
 }
 
-//
-// Password Validation Main Function
-//
+function printError(error) {
+    const RegContainerActive = formUI.isRegContainerActive();
 
-function passwordValidation() {
-    const password = regPasswordInput.value;
-    const confirmPassword = regConfirmPasswordInput.value;
-
-    let passwordLengthValid = passwordLengthValidation(password);
-    if (!passwordLengthValid) {
-        return;
-    }
-
-    passwordStrength(password);
-    let passwordsMatch = passwordMatch(password, confirmPassword);
-    if (passwordsMatch) {
-        registerButton.classList.remove("disabled");
+    if (RegContainerActive) {
+        elements.regErrorDisplay.textContent = error;
+        elements.regErrorDisplay.style.color = "var(--error)";
     } else {
-        registerButton.classList.add("disabled");
+        elements.loginErrorDisplay.textContent = error;
+        elements.loginErrorDisplay.style.color = "var(--error)";
     }
 }
 
-//
-// Password Length Validation Function
-//
+function clearError() {
+    const RegContainerActive = formUI.isRegContainerActive();
 
-function passwordLengthValidation(password) {
-    if (password.length > 0 && password.length < 8) {
-        printErrorMessage("Password must be at least 8 characters long!", true);
-        resetPasswordUI();
-        registerButton.classList.add("disabled");
-        return false;
-    } else if (password.length == 0) {
-        printErrorMessage("", true);
-        registerButton.classList.add("disabled");
-        return false;
+    if (RegContainerActive) {
+        elements.regErrorDisplay.textContent = "";
+        elements.regErrorDisplay.style.color = "var(--text-secondary)";
     } else {
-        regConfirmPasswordInput.setAttribute("minlength", password.length);
-        return true;
+        elements.loginErrorDisplay.textContent = "";
+        elements.loginErrorDisplay.style.color = "var(--text-secondary)";
     }
 }
 
-//
-// Password strength validation and UI updates
-//
-
-function passwordStrength(password) {
-    const containsLetters = /[a-zA-Z]/.test(password);
-    const containsNumbers = /[0-9]/.test(password);
-    const containsSymbols = /[^a-zA-Z0-9]/.test(password);
-
-    let strength;
-    if (containsLetters && containsNumbers && containsSymbols) {
-        strength = "strong";
-    } else if ( (containsLetters && containsNumbers && !containsSymbols) ||
-                (containsLetters && !containsNumbers && containsSymbols) ||
-                (!containsLetters && containsNumbers && containsSymbols) ) {
-        strength = "medium";
-    } else if (containsLetters || containsNumbers || containsSymbols) {
-        strength = "weak";
-    } else {
-        strength = "invalid";
-    }
-    
-    updatePasswordUI(strength);
-    if (strength === "invalid") {
-        printErrorMessage("", true);
-    }
+function disableRegisterButton() {
+    elements.registerButton.disabled = true;
+    elements.registerButton.classList.add("disabled");
 }
 
-//
-// Update Password Strength UI based on the strength level
-//
-
-function updatePasswordUI(strength) {
-    const elements = {
-        label: document.getElementById("password-strength-label"),
-        containers: document.getElementById("password-strength"),
-        indicators: [
-            document.getElementById("weak-password-indicator"),
-            document.getElementById("medium-password-indicator"),
-            document.getElementById("strong-password-indicator")
-        ]
-    };
-
-    const config = {
-        strong: {
-            text: "Strong Password",
-            color: "var(--success)",
-            activeIndicators: 3
-        },
-        medium: {
-            text: "Medium Password",
-            color: "var(--info)",
-            activeIndicators: 2
-        },
-        weak: {
-            text: "Weak Password",
-            color: "var(--warning)",
-            activeIndicators: 1
-        },
-        invalid: {
-            text: "Password Strength",
-            color: "var(--text-secondary)",
-            containerColor: "var(--error)",
-            activeIndicators: 0
-        }
-    };
-
-    const settings = config[strength];
-    const containerColor = settings.containerColor || settings.color;
-
-    elements.label.textContent = settings.text;
-    elements.label.style.color = settings.color;
-
-    elements.containers.style.borderColor = containerColor;
-    elements.containers.style.boxShadow = `0 0 5px ${containerColor}, inset 0 0 5px ${containerColor}`;
-
-    elements.indicators.forEach((indicators, index) => {
-        if (index < settings.activeIndicators) {
-
-            indicators.style.backgroundColor = "var(--success)";
-            indicators.style.boxShadow = "0 0 7px var(--success)";
-        } else {
-            indicators.style.backgroundColor = strength === "invalid" ? "var(--error)" : "";
-            indicators.style.boxShadow = strength === "invalid" ? "0 0 7px var(--error)" : "";
-        }
-    })
+function enableRegisterButton() {
+    elements.registerButton.disabled = false;
+    elements.registerButton.classList.remove("disabled");
 }
 
-// Reset Password UI to default state (INVALID)
+document.getElementById("reg-username").addEventListener("input", validateUsername);
+document.getElementById("reg-password").addEventListener("input", validatePassword);
+document.getElementById("reg-confirm-password").addEventListener("input", validatePassword);
 
-function resetPasswordUI() {
-    updatePasswordUI("invalid");
-}
+document.getElementById("reg-toggle-password").addEventListener("click", () => { formUI.togglePasswordVisibility();} );
+document.getElementById("login-toggle-password").addEventListener("click", () => { formUI.togglePasswordVisibility(); } );
 
-// Password match validation
+document.getElementById("reg-switch").addEventListener("click", formUI.switchForm);
+document.getElementById("login-switch").addEventListener("click", formUI.switchForm);
 
-function passwordMatch(password, confirmPassword) {
-    if (!(password === confirmPassword)) {
-        printErrorMessage("Passwords do not match!", true);
-        return false;
-    } else {
-        printErrorMessage("", true);
-        return true;
-    }
-}
-
-// Print error message in the registration or login form
-
-function printErrorMessage(message, registration) {
-    const alertMessage = document.getElementById(registration ? "reg-alert-message" : "login-alert-message");
-    
-    alertMessage.textContent = message;
-}
-
-//
-// Switching between registration and login forms
-//
-
-function switchForm() {
-    const regContainer = document.getElementById("registration-container");
-    const loginContainer = document.getElementById("login-container");
-
-    if (!regContainer || !loginContainer) {
-        console.error("One or both containers not found!");
-        return;
-    }
-
-    const regOrder = window.getComputedStyle(regContainer).order;
-    let regFocused = regOrder === "0";
-
-    if (regFocused) {
-
-        if (regContainer.classList.contains("active")) {
-            regContainer.classList.remove("active");
-        }
-
-        regContainer.style.order = "1";
-        regContainer.style.opacity = "0";
-        regContainer.classList.add("inactive");
-        
-        if (loginContainer.classList.contains("inactive")) {
-            loginContainer.classList.remove("inactive");
-        }
-
-        loginContainer.style.order = "0";
-        loginContainer.style.opacity = "1";
-        loginContainer.classList.add("active");
-
-        regForm.reset();
-        resetPasswordUI();
-
-    } else {
-        
-        if (loginContainer.classList.contains("active")) {
-            loginContainer.classList.remove("active");
-        }
-
-        loginContainer.style.order = "1";
-        loginContainer.style.opacity = "0";
-        loginContainer.classList.add("inactive");
-
-        if (regContainer.classList.contains("inactive")) {
-            regContainer.classList.remove("inactive");
-        }
-
-        regContainer.style.order = "0";
-        regContainer.style.opacity = "1";
-        regContainer.classList.add("active");
-
-        loginForm.reset();
-    }
-}
-
-// Toggle Password Visibility
-
-function togglePasswordVisibility() {
-    
-    const isRegContainerActive = document.getElementById("registration-container").classList.contains("active");
-
-    if (isRegContainerActive) {
-        toggleRegPassword();
-    } else {
-        toggleLoginPassword();
-    }
-}
-
-// Toggle Password Visibility for Registration Form
-
-function toggleRegPassword() {
-    const eyeIcon = document.getElementById("reg-eye-icon");
-
-    eyeIcon.classList.add("changing");
-
-    setTimeout(() => {
-        if (eyeIcon.classList.contains("fa-eye")) { // If the eye icon is currently showing an open eye :::
-            eyeIcon.classList.remove("fa-eye");
-            eyeIcon.classList.add("fa-eye-slash");
-            regPasswordInput.type = "text";
-            regConfirmPasswordInput.type = "text";
-        } else { // If the eye icon is currently showing a closed eye :::
-            eyeIcon.classList.remove("fa-eye-slash");
-            eyeIcon.classList.add("fa-eye");
-            regPasswordInput.type = "password";
-            regConfirmPasswordInput.type = "password";
-        }
-
-        eyeIcon.classList.remove("changing");
-    }, 100);
-}
-
-// Toggle Password Visibility for Login Form
-
-function toggleLoginPassword() { 
-    const eyeIcon = document.getElementById("login-eye-icon");
-
-    eyeIcon.classList.add("changing");
-
-    setTimeout(() => {
-        if (eyeIcon.classList.contains("fa-eye")) { // If the eye icon is currently showing an open eye :::
-            eyeIcon.classList.remove("fa-eye");
-            eyeIcon.classList.add("fa-eye-slash");
-            loginPasswordInput.type = "text";
-        } else { // If the eye icon is currently showing a closed eye :::
-            eyeIcon.classList.remove("fa-eye-slash");
-            eyeIcon.classList.add("fa-eye");
-            loginPasswordInput.type = "password";
-        }
-
-        eyeIcon.classList.remove("changing");
-    }, 100);
-}
-    
-
-// Event Listener Bindings
-
-// Switching between registration and login forms
-document.getElementById("switch-a").addEventListener("click", switchForm);
-document.getElementById("switch-b").addEventListener("click", switchForm);
-
-// Username Validation
-regUsernameInput.addEventListener("input", usernameValidation);
-
-// Toggling password visibility
-document.getElementById("reg-toggle-password").addEventListener("click", togglePasswordVisibility);
-document.getElementById("login-toggle-password").addEventListener("click", togglePasswordVisibility);
-
-// Password Validation
-regPasswordInput.addEventListener("input", passwordValidation);
-regConfirmPasswordInput.addEventListener("input", passwordValidation);
-
-// Registration Form Submission
-regForm.addEventListener("submit", function(event) {
+document.getElementById("reg-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    registerUser();
-});
-
-loginForm.addEventListener("submit", function(event) {
-    event.preventDefault();
-    console.log("Login form submitted");
-    loginUser();
+    event.stopPropagation();
+    await registerUser();
 });
