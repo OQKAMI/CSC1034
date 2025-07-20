@@ -1,4 +1,4 @@
-import { isUsernameAvailable, insertUser } from "./database.js";
+import { backendUserRegistration, backendUserLogin, getCurrentUserID, checkSession, backendUsernameAvailability, backendDeleteExpiredSessions } from "./database.js";
 import RegValidator from "./home/validation.js";
 import { updateConfirmPasswordLength, updatePasswordUI, resetPasswordUI } from "./home/validation.js";
 import FormUI from "./home/formUI.js";
@@ -7,17 +7,46 @@ const formUI = new FormUI();
 const regValidator = new RegValidator();
 
 const elements = {
+    authOverlay: document.getElementById("authentication-overlay"),
     registerButton: document.getElementById("register"),
     regErrorDisplay: document.getElementById("reg-alert-message"),
-    loginErrorDisplay: document.getElementById("login-alert-message"),
+    loginButton: document.getElementById("login"),
+    loginErrorDisplay: document.getElementById("login-alert-message")
 };
+
+autoSessionCheck();
+
+async function autoSessionCheck() {
+    const sessionID = getSessionID();
+    if (!sessionID) {
+        backendDeleteExpiredSessions();
+        showAuthenticationForms();
+        return;
+    }
+
+    const isValidSession = await checkSession(sessionID);
+    if (isValidSession) {
+        const userID = await getCurrentUserID(getSessionID());
+        if (userID) {
+            hideAuthenticationForms();
+            return;
+        }
+    }
+
+    clearSessionID();
+    showAuthenticationForms();
+}
+
+//
+// Registration Functions
+//
 
 async function registerUser() {
     const userID = crypto.randomUUID();
     const username = document.getElementById("reg-username").value.trim();
     const password = document.getElementById("reg-password").value;
 
-    const isAvailable = await isUsernameAvailable(username);
+    const isAvailable = await backendUsernameAvailability(username);
     if (!isAvailable) {
         formUI.resetForms();
         printError("Username unavailable");
@@ -29,29 +58,33 @@ async function registerUser() {
 
     const hashedPassword = await hashPassword(password);
     if (!hashedPassword) {
-        printError("Error hashing password. Please try again.");
+        printError("Error hashing password... Please try again");
         setTimeout(() => {
             clearError();
         }, 3000);
         return;
     }
 
-    const insertResult = await insertUser(userID, username, hashedPassword);
-    if (insertResult.error) {
-        printError("Error registering user. Please try again.");
+    const result = await backendUserRegistration(userID, username, hashedPassword);
+    if (result.error) {
+        printError("Error registering user... Please try again");
         setTimeout(() => {
             clearError();
         }, 3000);
+        console.error("Registration error:", result.error);
         return;
     }
 
     formUI.resetForms();
     clearError();
+
+    saveSessionID(result.sessionID);
+
+    hideAuthenticationForms();
 }
 
 async function validateUsername() {
     const result = await regValidator.isUsernameValid();
-    console.log("Username validation result:", result);
 
     if (!result.isValid) {
         printError(result.error);
@@ -62,7 +95,6 @@ async function validateUsername() {
 
 function validatePassword() {
     const result = regValidator.isPasswordValid();
-    console.log("Password validation result:", result);
 
     if (result.isValid) {
         updatePasswordUI(result.strength);
@@ -91,10 +123,10 @@ async function hashPassword(password) {
         const hash = await argon2.hash({
             pass: password,
             type: argon2.ArgonType.Argon2id,
-            time: 3,
+            time: 2,
             salt: salt,
-            mem: 64 * 1024, // 64 MB
-            parallelism: 1,
+            mem: 32 * 1024, // 64 MB
+            parallelism: 4, // 4 threads
             hashLen: 32, // 32 bytes
         });
         return hash.encoded;
@@ -103,6 +135,62 @@ async function hashPassword(password) {
         return null;
     }
 }
+
+function disableRegisterButton() {
+    elements.registerButton.disabled = true;
+    elements.registerButton.classList.add("disabled");
+}
+
+function enableRegisterButton() {
+    elements.registerButton.disabled = false;
+    elements.registerButton.classList.remove("disabled");
+}
+
+//
+// Login Functions
+//
+
+async function loginUser() {
+    const username = document.getElementById("login-username").value.trim();
+    const password = document.getElementById("login-password").value;
+
+    const result = await backendUserLogin(username, password);
+    if (result.error) {
+        formUI.resetForms();
+        printError(result.error);
+        setTimeout(() => {
+            clearError();
+        }, 3000);
+        return;
+    }
+
+    formUI.resetForms();
+    clearError();
+
+    saveSessionID(result.sessionID);
+
+    hideAuthenticationForms();
+}
+
+//
+// LocalStorage Functions
+//
+
+function saveSessionID(sessionID) {
+    localStorage.setItem("sessionID", sessionID);
+}
+
+function getSessionID() {
+    return localStorage.getItem("sessionID");
+}
+
+function clearSessionID() {
+    localStorage.removeItem("sessionID");
+}
+
+//
+// Error Output Functions
+//
 
 function printError(error) {
     const RegContainerActive = formUI.isRegContainerActive();
@@ -128,14 +216,12 @@ function clearError() {
     }
 }
 
-function disableRegisterButton() {
-    elements.registerButton.disabled = true;
-    elements.registerButton.classList.add("disabled");
+function hideAuthenticationForms() {
+    elements.authOverlay.classList.add("hidden");
 }
 
-function enableRegisterButton() {
-    elements.registerButton.disabled = false;
-    elements.registerButton.classList.remove("disabled");
+function showAuthenticationForms() {
+    elements.authOverlay.classList.remove("hidden");
 }
 
 document.getElementById("reg-username").addEventListener("input", validateUsername);
@@ -145,11 +231,17 @@ document.getElementById("reg-confirm-password").addEventListener("input", valida
 document.getElementById("reg-toggle-password").addEventListener("click", () => { formUI.togglePasswordVisibility();} );
 document.getElementById("login-toggle-password").addEventListener("click", () => { formUI.togglePasswordVisibility(); } );
 
-document.getElementById("reg-switch").addEventListener("click", formUI.switchForm);
-document.getElementById("login-switch").addEventListener("click", formUI.switchForm);
+document.getElementById("reg-switch").addEventListener("click", () => { formUI.switchForm(); });
+document.getElementById("login-switch").addEventListener("click", () => { formUI.switchForm(); });
 
 document.getElementById("reg-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    event.stopPropagation();
+    // event.stopPropagation();
     await registerUser();
+});
+
+document.getElementById("login-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    // event.stopPropagation();
+    await loginUser();
 });

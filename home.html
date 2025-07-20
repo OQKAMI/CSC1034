@@ -9,6 +9,7 @@
         <link rel="stylesheet" type="text/css" href="css/home.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
+        <link rel="preload" href="https://unpkg.com/argon2-browser@1.18.0/dist/argon2-bundled.min.js" as="script">
         <script src="https://unpkg.com/argon2-browser@1.18.0/dist/argon2-bundled.min.js"></script>
 
         <title>Home - 9 Letters</title>
@@ -23,7 +24,7 @@
 
             <div class="test">
 
-                <button hidden class="button-a">Test Button</button>
+                <button class="button-a">Test Button</button>
 
             </div>
 
@@ -39,7 +40,7 @@
 
         </div>
 
-        <div class="authentication-overlay">
+        <div id="authentication-overlay" class="authentication-overlay">
 
             <!-- Authentication Popup -->
             <!-- Login or Register    -->

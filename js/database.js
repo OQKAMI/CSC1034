@@ -14,39 +14,109 @@ export async function executeQuery(params) {
     }
 }
 
-export async function isUsernameAvailable(username) {
-    let params = new URLSearchParams();
-    params.append("query", `SELECT CASE WHEN COUNT(*) = 0 THEN 'AVAILABLE' ELSE 'UNAVAILABLE' END AS availability FROM Users WHERE username = '${username}';`);
+export async function backendUsernameAvailability(username) {
+    try {
+        let params = new URLSearchParams();
+        params.append("action", "usernameAvailability");
+        params.append("username", username);
 
-    let result = await executeQuery(params);
-    return result.data[0].availability === "AVAILABLE";
+        const result = await executeQuery(params);
+        if (result && result.available === true) {
+            return true;
+        } else {
+            return false;
+        }
+    } catch (err) {
+        console.error("Error checking username availability:", err);
+        return { isAvailable: false, error: "Network error" };
+    }
 }
 
-export async function insertUser(userID, username, hashedPassword) {
-    let params = new URLSearchParams();
-    params.append("query", `INSERT INTO Users (userID, username, password) VALUES ('${userID}', '${username}', '${hashedPassword}');`);
+export async function backendUserRegistration(userID, username, hashedPassword) {
+    try {
+        let params = new URLSearchParams();
+        params.append("action", "register");
+        params.append("userID", userID);
+        params.append("username", username);
+        params.append("password", hashedPassword);
 
-    return await executeQuery(params);
+        const result = await executeQuery(params);
+        if (result && result.success) {
+            return { success: true, sessionID: result.sessionID };
+        } else {
+            return { success: false, error: result.error };
+        }
+    } catch (err) {
+        console.error("Registration error:", err);
+        return { success: false, error: "Network error during registering" };
+    }
 }
 
-export async function insertSession(sessionID, userID) {
-    let params = new URLSearchParams();
-    params.append("query", `INSERT INTO Sessions (sessionID, userID) VALUES ('${sessionID}', '${userID}');`);
+export async function backendUserLogin(username, password) {
+    try {
+        let params = new URLSearchParams();
+        params.append("action", "login");
+        params.append("username", username);
+        params.append("password", password);
 
-    return await executeQuery(params);
+        const result = await executeQuery(params);
+        if (result && result.success) {
+            return { success: true, sessionID: result.sessionID };
+        } else {
+            return { success: false, error: result.error || "Invalid username or password" };
+        }
+    } catch (err) {
+        console.error("Login error:", err);
+        return { success: false, error: "Network error during login" };
+    }
 }
 
-export async function getValidSessionIDs() {
-    let params = new URLSearchParams();
-    params.append("query", "SELECT sessionID FROM Sessions WHERE expiresAt < CURRENT_TIMESTAMP;");
+export async function checkSession(sessionID) {
+    try {
+        let params = new URLSearchParams();
+        params.append("action", "checkSession");
+        params.append("sessionID", sessionID);
 
-    let result = await executeQuery(params);
-    return result.data.map(row => row.sessionID);
+        const result = await executeQuery(params);
+        return result?.valid || false;
+    } catch (err) {
+        console.error("Error checking session:", err);
+        return false;
+    }
 }
 
-export async function deleteExpiredSessions() {
-    let params = new URLSearchParams();
-    params.append("query", "DELETE FROM Sessions WHERE expiresAt < CURRENT_TIMESTAMP;");
+export async function getCurrentUserID(sessionID) {
+    try {
+        let params = new URLSearchParams();
+        params.append("action", "getUserID");
+        params.append("sessionID", sessionID);
 
-    return await executeQuery(params);
+        const result = await executeQuery(params);
+
+        if (result) {
+            return { success: true, userID: result.userID };
+        } else {
+            return { success: false, error: result.error || "Network error" };
+        }
+    } catch (err) {
+        console.error("Error getting current user ID:", err);
+        return { success: false, error: "Network error" };
+    }
+}
+
+export async function backendDeleteExpiredSessions() {
+    try {
+        let params = new URLSearchParams();
+        params.append("action", "deleteExpiredSessions");
+
+        const result = await executeQuery(params);
+        if (result && result.success) {
+            return { success: true };
+        } else {
+            return { success: false, error: result.error || "Failed to delete expired sessions" };
+        }
+    } catch (err) {
+        console.error("Error deleting expired sessions:", err);
+        return { success: false, error: "Network error during session cleanup" };
+    }
 }

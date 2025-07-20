@@ -72,6 +72,11 @@
     width: 100vw;
 }
 
+.hidden {
+    display: none;
+    pointer-events: auto;
+}
+
 .form-container {
     background-color: var(--bg-surface);
     border: 2px solid var(--border);

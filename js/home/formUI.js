@@ -2,6 +2,10 @@ import { resetPasswordUI } from "./validation.js";
 
 class FormUI {
     constructor() {
+        this.init();
+    }
+
+    init() {
         this.regContainer = document.getElementById("registration-container");
         this.loginContainer = document.getElementById("login-container");
 
