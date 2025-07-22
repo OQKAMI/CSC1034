@@ -1,7 +1,7 @@
-import { backendUserRegistration, backendUserLogin, getCurrentUserID, checkSession, backendUsernameAvailability, backendDeleteExpiredSessions } from "./database.js";
-import RegValidator from "./home/validation.js";
-import { updateConfirmPasswordLength, updatePasswordUI, resetPasswordUI } from "./home/validation.js";
-import FormUI from "./home/formUI.js";
+import { backendUserRegistration, backendUserLogin, getCurrentUserID, checkSession, backendUsernameAvailability, backendDeleteExpiredSessions } from "../database.js";
+import RegValidator from "./validation.js";
+import { updateConfirmPasswordLength, updatePasswordUI, resetPasswordUI } from "./validation.js";
+import FormUI from "./formUI.js";
 
 const formUI = new FormUI();
 const regValidator = new RegValidator();
@@ -16,6 +16,7 @@ const elements = {
 
 autoSessionCheck();
 
+// TODO: DOCUMENT THIS
 async function autoSessionCheck() {
     const sessionID = getSessionID();
     if (!sessionID) {
@@ -41,6 +42,7 @@ async function autoSessionCheck() {
 // Registration Functions
 //
 
+// TODO: DOCUMENT THIS
 async function registerUser() {
     const userID = crypto.randomUUID();
     const username = document.getElementById("reg-username").value.trim();
@@ -83,6 +85,7 @@ async function registerUser() {
     hideAuthenticationForms();
 }
 
+// TODO: DOCUMENT THIS
 async function validateUsername() {
     const result = await regValidator.isUsernameValid();
 
@@ -93,6 +96,7 @@ async function validateUsername() {
     }
 }
 
+// TODO: DOCUMENT THIS
 function validatePassword() {
     const result = regValidator.isPasswordValid();
 
@@ -115,6 +119,7 @@ function validatePassword() {
     }
 }
 
+// TODO: DOCUMENT THIS
 async function hashPassword(password) {
     try {
         const salt = new Uint8Array(16);
@@ -136,11 +141,13 @@ async function hashPassword(password) {
     }
 }
 
+// TODO: DOCUMENT THIS
 function disableRegisterButton() {
     elements.registerButton.disabled = true;
     elements.registerButton.classList.add("disabled");
 }
 
+// TODO: DOCUMENT THIS
 function enableRegisterButton() {
     elements.registerButton.disabled = false;
     elements.registerButton.classList.remove("disabled");
@@ -150,6 +157,7 @@ function enableRegisterButton() {
 // Login Functions
 //
 
+// TODO: DOCUMENT THIS
 async function loginUser() {
     const username = document.getElementById("login-username").value.trim();
     const password = document.getElementById("login-password").value;
@@ -176,14 +184,17 @@ async function loginUser() {
 // LocalStorage Functions
 //
 
+// TODO: DOCUMENT THIS
 function saveSessionID(sessionID) {
     localStorage.setItem("sessionID", sessionID);
 }
 
+// TODO: DOCUMENT THIS
 function getSessionID() {
     return localStorage.getItem("sessionID");
 }
 
+// TODO: DOCUMENT THIS
 function clearSessionID() {
     localStorage.removeItem("sessionID");
 }
@@ -192,6 +203,7 @@ function clearSessionID() {
 // Error Output Functions
 //
 
+// TODO: DOCUMENT THIS
 function printError(error) {
     const RegContainerActive = formUI.isRegContainerActive();
 
@@ -204,6 +216,7 @@ function printError(error) {
     }
 }
 
+// TODO: DOCUMENT THIS
 function clearError() {
     const RegContainerActive = formUI.isRegContainerActive();
 
@@ -216,10 +229,12 @@ function clearError() {
     }
 }
 
+// TODO: DOCUMENT THIS
 function hideAuthenticationForms() {
     elements.authOverlay.classList.add("hidden");
 }
 
+// TODO: DOCUMENT THIS
 function showAuthenticationForms() {
     elements.authOverlay.classList.remove("hidden");
 }
@@ -236,12 +251,10 @@ document.getElementById("login-switch").addEventListener("click", () => { formUI
 
 document.getElementById("reg-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    // event.stopPropagation();
     await registerUser();
 });
 
 document.getElementById("login-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    // event.stopPropagation();
     await loginUser();
 });

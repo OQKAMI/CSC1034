@@ -1,10 +1,12 @@
 import { resetPasswordUI } from "./validation.js";
 
+// TODO: DOCUMENT THIS
 class FormUI {
     constructor() {
         this.init();
     }
 
+    // TODO: DOCUMENT THIS
     init() {
         this.regContainer = document.getElementById("registration-container");
         this.loginContainer = document.getElementById("login-container");
@@ -17,12 +19,14 @@ class FormUI {
         this.loginPasswordInput = document.getElementById("login-password");
     }
 
+    // TODO: DOCUMENT THIS
     resetForms() {
         this.regForm.reset();
         this.loginForm.reset();
         resetPasswordUI();
     }
 
+    // TODO: DOCUMENT THIS
     togglePasswordVisibility() {
         
         const RegContainerActive = this.isRegContainerActive();
@@ -34,6 +38,7 @@ class FormUI {
         }
     }
 
+    // TODO: DOCUMENT THIS
     toggleRegPassword() {
         const eyeIcon = document.getElementById("reg-eye-icon");
 
@@ -58,6 +63,7 @@ class FormUI {
         }, 100);
     }
 
+    // TODO: DOCUMENT THIS
     toggleLoginPassword() { 
         const eyeIcon = document.getElementById("login-eye-icon");
 
@@ -80,6 +86,7 @@ class FormUI {
         }, 100);
     }
 
+    // TODO: DOCUMENT THIS
     switchForm() {
         if (!this.regContainer || !this.loginContainer) {
             console.error("One or both containers not found!");
@@ -132,6 +139,7 @@ class FormUI {
         }
     }
 
+    // TODO: DOCUMENT THIS
     isRegContainerActive() {
         return this.regContainer.classList.contains("active");
     }

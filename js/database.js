@@ -1,3 +1,4 @@
+// TODO: DOCUMENT THIS
 export async function executeQuery(params) {
     let url = "https://amakay01.webhosting1.eeecs.qub.ac.uk/dbConnector.php";
     try {
@@ -14,6 +15,7 @@ export async function executeQuery(params) {
     }
 }
 
+// TODO: DOCUMENT THIS
 export async function backendUsernameAvailability(username) {
     try {
         let params = new URLSearchParams();
@@ -32,6 +34,7 @@ export async function backendUsernameAvailability(username) {
     }
 }
 
+// TODO: DOCUMENT THIS
 export async function backendUserRegistration(userID, username, hashedPassword) {
     try {
         let params = new URLSearchParams();
@@ -52,6 +55,7 @@ export async function backendUserRegistration(userID, username, hashedPassword) 
     }
 }
 
+// TODO: DOCUMENT THIS
 export async function backendUserLogin(username, password) {
     try {
         let params = new URLSearchParams();
@@ -71,6 +75,7 @@ export async function backendUserLogin(username, password) {
     }
 }
 
+// TODO: DOCUMENT THIS
 export async function checkSession(sessionID) {
     try {
         let params = new URLSearchParams();
@@ -85,6 +90,7 @@ export async function checkSession(sessionID) {
     }
 }
 
+// TODO: DOCUMENT THIS
 export async function getCurrentUserID(sessionID) {
     try {
         let params = new URLSearchParams();
@@ -104,6 +110,7 @@ export async function getCurrentUserID(sessionID) {
     }
 }
 
+// TODO: DOCUMENT THIS
 export async function backendDeleteExpiredSessions() {
     try {
         let params = new URLSearchParams();

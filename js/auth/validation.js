@@ -81,6 +81,7 @@ class RegValidator {
         return password !== confirmPassword;
     }
 
+    // TODO: DOCUMENT THIS
     getPasswordStrength(password) {
         const checks = {
             hasLetters: /[a-zA-Z]/.test(password),
@@ -101,6 +102,7 @@ class RegValidator {
     }
 }
 
+// TODO: DOCUMENT THIS
 class PasswordUI {
     constructor() {
         this.elements = {
@@ -142,6 +144,7 @@ class PasswordUI {
         };
     }
 
+    // TODO: DOCUMENT THIS
     update(strength) {
         const settings = this.config[strength];
         const containerColor = settings.containerColor || settings.color;
@@ -151,17 +154,19 @@ class PasswordUI {
         this.updateIndicators(strength, settings.activeIndicators);
     }
 
-
+    // TODO: DOCUMENT THIS
     updateLabel(text, color) {
         this.elements.label.textContent = text;
         this.elements.label.style.color = color;
     }
 
+    // TODO: DOCUMENT THIS
     updateContainer(color) {
         this.elements.container.style.borderColor = color;
         this.elements.container.style.boxShadow = `0 0 5px ${color}, inset 0 0 5px ${color}`;
     }
 
+    // TODO: DOCUMENT THIS
     updateIndicators(strength, activeIndicators) {
         this.elements.indicators.forEach((indicators, index) => {
             if (index < activeIndicators) {
@@ -175,10 +180,12 @@ class PasswordUI {
         })
     }
 
+    // TODO: DOCUMENT THIS
     reset() {
         this.update("invalid");
     }
 
+    // TODO: DOCUMENT THIS
     updateConfirmPasswordLength(length) {
         this.regConfirmPasswordInput.setAttribute("minlength", length);
     }
@@ -186,18 +193,22 @@ class PasswordUI {
 
 const passwordUI = new PasswordUI();
 
+// TODO: DOCUMENT THIS
 export function updateConfirmPasswordLength(length) {
     passwordUI.updateConfirmPasswordLength(length);
 }
 
+// TODO: DOCUMENT THIS
 export function updatePasswordUI(strength) {
     passwordUI.update(strength);
 }
 
+// TODO: DOCUMENT THIS
 export function resetPasswordUI() {
     passwordUI.reset();
 }
 
+// TODO: DOCUMENT THIS
 export function togglePasswordVisibility() {
     passwordUI.togglePasswordVisibility();
 }
