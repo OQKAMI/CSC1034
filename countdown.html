@@ -20,19 +20,32 @@
 
                 <div class="bubble-main bubble-parent">
 
+                    <div class="bubble-top pointer-override">
+                        <div id="timer-display" class="timer-display">
+                            <!-- Timer Display -->
+                            <span class="timer-label">Time Left:</span><div id="timer">75</div>
+                        </div>
+
+                        <div class="game-info">
+                            <span class="score-label">Score:</span><div id="score">0</div>
+                        </div>
+                    </div>
+
+                    <hr>
+
                     <div class="bubble">
-                        <div class="bubble-display">
+                        <div class="bubble-display pointer-override">
 
                             <!-- Countdown Display -->
-                            <div id="letter-1" class="letter-container">1</div>
-                            <div id="letter-2" class="letter-container">2</div>
-                            <div id="letter-3" class="letter-container">3</div>
-                            <div id="letter-4" class="letter-container">4</div>
-                            <div id="letter-5" class="letter-container">5</div>
-                            <div id="letter-6" class="letter-container">6</div>
-                            <div id="letter-7" class="letter-container">7</div>
-                            <div id="letter-8" class="letter-container">8</div>
-                            <div id="letter-9" class="letter-container">9</div>
+                            <div id="letter-1" class="letter-container"></div>
+                            <div id="letter-2" class="letter-container"></div>
+                            <div id="letter-3" class="letter-container"></div>
+                            <div id="letter-4" class="letter-container"></div>
+                            <div id="letter-5" class="letter-container"></div>
+                            <div id="letter-6" class="letter-container"></div>
+                            <div id="letter-7" class="letter-container"></div>
+                            <div id="letter-8" class="letter-container"></div>
+                            <div id="letter-9" class="letter-container"></div>
 
                         </div>
                     </div>
@@ -44,6 +57,10 @@
 
                             <!-- Countdown Controls -->
                             <!-- Vowels / Consonants -->
+                            <div class="controls">
+                                <button id="vowel-button">Vowels</button>
+                                <button id="consonant-button">Consonants</button>
+                            </div>
 
                         </div>
                     </div>

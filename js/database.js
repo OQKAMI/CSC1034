@@ -127,3 +127,21 @@ export async function backendDeleteExpiredSessions() {
         return { success: false, error: "Network error during session cleanup" };
     }
 }
+
+export async function checkWordWithAPI(word) {
+    try {
+        let params = new URLSearchParams();
+        params.append("action", "checkWord");
+        params.append("word", word);
+
+        const result = await executeQuery(params);
+        if (result && result.valid) {
+            return { success: true, data: result.data }; // TODO: REMOVE DATA -> DEBUG ONLY
+        } else {
+            return { success: false };
+        }
+    } catch (err) {
+        console.error("Error checking word with API:", err);
+        return { success: false, error: "Network error during word check" };
+    }
+}

@@ -2,7 +2,9 @@ import { backendUserRegistration, backendUserLogin, getCurrentUserID, checkSessi
 import RegValidator from "./validation.js";
 import { updateConfirmPasswordLength, updatePasswordUI, resetPasswordUI } from "./validation.js";
 import FormUI from "./formUI.js";
+import HomeUI from "../home/homeUI.js";
 
+const homeUI = new HomeUI();
 const formUI = new FormUI();
 const regValidator = new RegValidator();
 
@@ -76,6 +78,8 @@ async function registerUser() {
         console.error("Registration error:", result.error);
         return;
     }
+
+    homeUI.showPopup("Registration successful!", 3000);
 
     formUI.resetForms();
     clearError();
@@ -171,6 +175,8 @@ async function loginUser() {
         }, 3000);
         return;
     }
+
+    homeUI.showPopup("Login successful!", 3000);
 
     formUI.resetForms();
     clearError();

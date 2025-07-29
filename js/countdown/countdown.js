@@ -1,3 +1,8 @@
+import { checkWordWithAPI } from "../database.js";
+import Timer from "./timer.js";
+
+const timer = new Timer();
+
 const letterElements = {
     letterOne: document.getElementById('letter-1'),
     letterTwo: document.getElementById('letter-2'),
@@ -9,3 +14,4 @@ const letterElements = {
     letterEight: document.getElementById('letter-8'),
     letterNine: document.getElementById('letter-9'),
 };
+

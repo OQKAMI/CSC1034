@@ -23,9 +23,110 @@
             
             <!-- Main Content-->
 
-            <div class="test">
+            <div class="main-content">
 
-                <button id="start-game">Test Button</button>
+                <div class="header-container">
+
+                    <div class="logo-container basic-container select-override">
+                        <h1 class="sub-title">9 Letters</h1>
+                    </div>
+
+                    <div class="welcome-container basic-container select-override">
+                        <h2 class="welcome-message sub-title">Welcome, </h2><h2 id="welcome-username" class="sub-title">Username</h2> <!-- Username will be dynamically set -->
+                    </div>
+
+                    <div class="profile-container basic-container">
+                        
+                    </div>
+
+                </div>
+
+                <div class="content-container">
+
+                    <div class="profile-stats-container basic-container">
+
+                    </div>
+                    
+                    <div class="game-container basic-container">
+                        
+                        <div class="game-controls">
+                            <div class="resume-game-container">
+                                <button id="resume-game">Resume Game</button>
+                                <div id="resume-difficulty">Easy</div>
+                                <div id="last-played">Apr. 21</div>
+                            </div>
+
+                            <div class="new-game-container">
+                                <button id="new-game">New Game</button>
+                                <div class="difficulty-selector">
+                                    <select name="difficulty" id="difficulty"> <!-- Difficulty Selector -->
+                                        <option value="" disabled selected>Select Difficulty</option>
+                                        <option value="easy">Easy</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="hard">Hard</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        
+
+                        <div class="difficulty-info">
+
+                            <h3>Difficulty Effects</h3>
+
+                            <table>
+
+                                <thead>
+                                    <tr>
+                                        <th>Level</th>
+                                        <th>Timer Length</th>
+                                        <th>Letter Reusability</th>
+                                        <th>Score Multiplier</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    <tr>
+                                        <td><span class="level easy">Easy</span></td>
+                                        <td>90 Seconds</td>
+                                        <td>Unlimited</td>
+                                        <td>0.90x</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="level medium">Medium</span></td>
+                                        <td>75 Seconds</td>
+                                        <td>3 times</td>
+                                        <td>1.00x</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="level hard">Hard</span></td>
+                                        <td>60 Seconds</td>
+                                        <td>None</td>
+                                        <td>1.25x</td>
+                                    </tr>
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                    <div class="leaderboard-container basic-container">
+
+                    </div>
+
+                </div>
+
+                <div class="footer-container">
+
+                    <div class="footer-text-container basic-container">
+                        <h2 class="footer-text sub-title select-override">© 2025 - 9 Letters. All rights reserved.</h2>
+                        <h2 class="footer-text sub-title">Developed by <a href="https://github.com/OQKAMI" target="_blank">OOKAMI</a></h2>
+                    </div>
+
+                </div>
 
             </div>
 
