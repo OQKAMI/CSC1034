@@ -50,10 +50,10 @@
                     <div class="game-container basic-container">
                         
                         <div class="game-controls">
-                            <div class="resume-game-container">
+                            <div class="resume-game-container hidden">
                                 <button id="resume-game">Resume Game</button>
-                                <div id="resume-difficulty">Easy</div>
-                                <div id="last-played">Apr. 21</div>
+                                <div id="resume-difficulty">N/A</div> <!-- Difficulty dynamically loaded using JS -->
+                                <div id="last-played">N/A</div> <!-- Last played date dynamically loaded using JS -->
                             </div>
 
                             <div class="new-game-container">
@@ -69,7 +69,7 @@
                             </div>
                         </div>
 
-                        
+                        <hr>
 
                         <div class="difficulty-info">
 
@@ -161,20 +161,20 @@
 
                         <div class="form-group">
                             <label for="reg-username">Username</label>
-                            <input type="text" id="reg-username" name="username" placeholder="Enter your username" autocomplete="username" minlength="4" required>
+                            <input autofocus tabindex="1" type="text" id="reg-username" name="username" placeholder="Enter your username" autocomplete="username" minlength="4" required>
                         </div>
 
                         <div class="form-group">
                             <label for="reg-password">Password</label>
                             <div class="password-group">
-                                <input type="password" id="reg-password" name="password" placeholder="Enter your password" minlength="8" required>
+                                <input tabindex="2" type="password" id="reg-password" name="password" placeholder="Enter your password" minlength="8" required>
                                 <button id="reg-toggle-password" type="button"><i id="reg-eye-icon" class="fa-solid fa-eye"></i></button>
                             </div>
                         </div>
 
                         <div class="form-group">
                             <label for="reg-confirm-password">Confirm Password</label>
-                            <input type="password" id="reg-confirm-password" name="confirm-password" placeholder="Confirm your password" minlength="8" required>
+                            <input tabindex="3" type="password" id="reg-confirm-password" name="confirm-password" placeholder="Confirm your password" minlength="8" required>
                         </div>
 
                         <div class="password-strength-container">
@@ -218,13 +218,13 @@
 
                         <div class="form-group" id="username-login-group">
                             <label for="login-username">Username</label>
-                            <input type="text" id="login-username" name="username" placeholder="Enter your username" autocomplete="username" required>
+                            <input autofocus tabindex="5" type="text" id="login-username" name="username" placeholder="Enter your username" autocomplete="username" required>
                         </div>
 
                         <div class="form-group">
                             <label for="login-password">Password</label>
                             <div class="password-group">
-                                <input type="password" id="login-password" name="password" placeholder="Enter your password" required>
+                                <input tabindex="6" type="password" id="login-password" name="password" placeholder="Enter your password" required>
                                 <button id="login-toggle-password" type="button"><i id="login-eye-icon" class="fa-solid fa-eye"></i></button>
                             </div>
                         </div>

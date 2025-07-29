@@ -74,6 +74,21 @@
     border-radius: 12px;
 }
 
+.hidden {
+    display: none;
+    pointer-events: none;
+    user-select: none;
+    opacity: 0;
+}
+
+hr {
+    width: 85%;
+    border: 0;
+    border-top: 2px solid var(--border);
+    margin: 20px auto;
+    opacity: 0.85;
+}
+
 .main-content {
     display: flex;
     flex-direction: column;
@@ -152,8 +167,13 @@
 }
 
 .game-controls button {
-    width: 25%;
-    height: 5vh;
+    width: 168px;
+    min-width: 168px;
+    max-width: 168px;
+
+    height: 48.14px;
+    min-height: 48.14px;
+    max-height: 48.14px;
 
     border: 2px solid var(--primary);
     border-radius: 8px;
@@ -177,16 +197,48 @@
     height: 5vh;
 }
 
-#resume-difficulty {
-    width: 25%;
-    height: 50%;
+#resume-difficulty,
+#difficulty {
+    display: flex;
+    align-items: center;
+
+    width: 189px;
+    min-width: 189px;
+    max-width: 189px;
+
+    height: 48.14px;
+    min-height: 48.14px;
+    max-height: 48.14px;
+
+    box-sizing: border-box;
 
     border: 2px solid var(--border);
     border-radius: 8px;
 
-    padding: 0.6rem 2.5rem 0.6rem 1rem;
-    font-size: 1.1rem;
+    background-color: var(--bg-surface);
     color: var(--text-main);
+
+    font-size: 1.1rem;
+    padding: 0 1.25rem;
+}
+
+#last-played {
+    width: 20%;
+
+    height: 44.14px;
+    min-height: 44.14px;
+    max-height: 44.14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-color: var(--bg-surface);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+
+    color: var(--text-main);
+    font-size: 1.1rem;
 }
 
 #difficulty {
