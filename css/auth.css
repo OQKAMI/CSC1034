@@ -173,12 +173,18 @@ input:invalid {
 }
 
 #reg-toggle-password, #login-toggle-password {
-    background: transparent;
+    max-width: 15px;
+
     border: none;
+    border-radius: none;
+
+    background: transparent;
+    background-color: transparent;
+    box-shadow: none;
     color: var(--text-secondary);
     padding: 8px;
     cursor: pointer;
-    max-width: 15px;
+    
     margin-right: 8px;
 }
 
@@ -309,6 +315,10 @@ input:invalid {
 
 #register:disabled {
     cursor: not-allowed;
+}
+
+#reg-switch, #login-switch {
+    box-shadow: 0 2px 10px var(--secondary);
 }
 
 /* Animations */

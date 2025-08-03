@@ -145,3 +145,23 @@ export async function checkWordWithAPI(word) {
         return { success: false, error: "Network error during word check" };
     }
 }
+
+export async function backendCreateGame(userID, difficulty, score) {
+    try {
+        let params = new URLSearchParams();
+        params.append("action", "createGame");
+        params.append("userID", userID);
+        params.append("difficulty", difficulty);
+        params.append("score", score);
+
+        const result = await executeQuery(params);
+        if (result && result.success) {
+            return { success: true, gameID: result.gameID };
+        } else {
+            return { success: false, error: result.error || "Failed to create game" };
+        }
+    } catch (err) {
+        console.error("Error creating game:", err);
+        return { success: false, error: "Network error during game creation" };
+    }
+}
