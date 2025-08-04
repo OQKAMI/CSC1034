@@ -42,10 +42,6 @@
                 </div>
 
                 <div class="content-container">
-
-                    <div class="profile-stats-container basic-container">
-
-                    </div>
                     
                     <div class="game-container basic-container">
                         
@@ -114,6 +110,59 @@
                     </div>
 
                     <div class="leaderboard-container basic-container">
+                        <div class="leaderboard-selector">
+
+                            <button class="nav-btn prev-btn" id="prevBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <polyline points="15,18 9,12 15,6"></polyline>
+                                </svg>
+                            </button>
+                            
+                            <div class="selector-display" id="selectorDisplay">
+                                <span class="current-type" id="currentType">🏆 Highest Score</span>
+                                <span class="type-description" id="typeDescription">Best single game score</span>
+                            </div>
+                            
+                            <button class="nav-btn next-btn" id="nextBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <polyline points="9,18 15,12 9,6"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="loading" id="loading">
+                            <div class="spinner"></div>
+                            <p>Loading leaderboard...</p>
+                        </div>
+
+                        <div class="leaderboard-wrapper" id="leaderboard-wrapper">
+                            <table class="leaderboard-table" id="leaderboard-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Player</th>
+                                        <th id="stat-header">Highest Score</th>
+                                        <th>Games Played</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody id="leaderboard-body">
+                                    <!-- Leaderboard entries will be dynamically inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="user-stats" id="user-stats">
+                            <h3>Your Stats</h3>
+                            <div class="user-stats-grid" id="user-stats-grid">
+                                <!-- User stats will be dynamically inserted here -->
+                            </div>
+                        </div>
+
+                        <div class="error-message" id="error-message" style="display: none">
+                            <p>Failed to load leaderboard. Please try again.</p>
+                            <button onclick="loadLeaderboard()">Retry</button>
+                        </div>
 
                     </div>
 
@@ -123,7 +172,6 @@
 
                     <div class="footer-text-container basic-container">
                         <h2 class="footer-text sub-title select-override">© 2025 - 9 Letters. All rights reserved.</h2>
-                        <h2 class="footer-text sub-title">Developed by <a href="https://github.com/OokamiGamma" target="_blank">OOKAMI(Γ)</a></h2>
                     </div>
 
                 </div>
@@ -250,6 +298,9 @@
 
         </div>
 
+        <script src="js/home/leaderboard/leaderboard-init.js"></script>
+        <script src="js/home/leaderboard/leaderboard.js"></script>
+        <script src="js/home/leaderboard/leaderboardSelector.js"></script>
         <script type="module" src="js/home/home.js"></script>
         <script type="module" src="js/auth/auth.js"></script>
 

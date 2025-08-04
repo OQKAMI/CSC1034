@@ -1,4 +1,4 @@
-import { backendDeleteExpiredSessions, backendSaveWord, backendCheckWordWithAPI, backendCreateGame, backendUpdateScore, getCurrentUserID, backendUpdateUserStats } from "../backend.js";
+import { backendDeleteExpiredSessions, backendSaveWord, backendCheckWordWithAPI, backendCreateGame, backendUpdateScore, backendFetchGameScore, getCurrentUserID, backendUpdateUserStats } from "../backend.js";
 import Timer from "./timer.js";
 
 async function expiredSessionCleanup() {
@@ -10,12 +10,13 @@ async function expiredSessionCleanup() {
 expiredSessionCleanup();
 
 const timer = new Timer();
-const userID = await getCurrentUserID(localStorage.getItem("sessionID"));
-if (!userID.success) {
+let userIDResult = await getCurrentUserID(localStorage.getItem("sessionID"));
+if (!userIDResult.success) {
     console.error("Failed to get current user ID:", userID.error);
     window.location.href = "home.html";
-    return;
 }
+
+const userID = userIDResult.userID;
 
 const chosenLetters = [];
 const submittedWords = [];
@@ -67,10 +68,61 @@ async function init() {
             break;
     }
 
+    if (localStorage.getItem("chosenLetters")) {
+        loadGameState();
+    }
+
     gameElements.scoreElement.textContent = "0";
     outputMessage("Welcome to Countdown!");
 
-    createSaveGame();
+    await createSaveGame();
+
+    if (localStorage.getItem("gameType") === "resume-game") {
+        outputMessage("Resuming your game...", "success", 2000);
+            setTimeout(() => {
+                outputMessage("Choose a new set of letters to continue playing.", null, 0);
+            }, 2000);
+    }
+}
+
+function loadGameState() {
+    const savedLetters = localStorage.getItem("chosenLetters");
+    const savedWords = localStorage.getItem("submittedWords");
+    const savedTimeLeft = localStorage.getItem("timeLeft");
+    
+    if (savedLetters) {
+        const letters = JSON.parse(savedLetters);
+        const letterKeys = Object.keys(letterElements);
+        
+        // Clear existing letters first
+        chosenLetters.length = 0;
+        
+        // Load saved letters
+        letters.forEach((letter, index) => {
+            if (index < letterKeys.length && letterElements[letterKeys[index]]) {
+                letterElements[letterKeys[index]].textContent = letter;
+                chosenLetters.push(letter);
+            }
+        });
+    }
+    
+    if (savedWords) {
+        submittedWords.length = 0; // Clear existing
+        submittedWords.push(...JSON.parse(savedWords));
+    }
+    
+    if (savedTimeLeft) {
+        timer.timeLeft = parseInt(savedTimeLeft);
+    } else {
+        timer.timeLeft = timer.duration;
+    }
+    
+    timer.updateDisplay();
+    timer.start();
+
+    localStorage.removeItem("chosenLetters");
+    localStorage.removeItem("submittedWords");
+    localStorage.removeItem("timeLeft");
 }
 
 function outputMessage(message, type, clearAfter = 0) {
@@ -85,6 +137,7 @@ function outputMessage(message, type, clearAfter = 0) {
     if (clearAfter > 0) {
         setTimeout(() => {
             gameElements.messageElement.textContent = "";
+            gameElements.messageElement.style.color = "var(--text-primary)";
         }, clearAfter);
     }
 }
@@ -150,27 +203,38 @@ function getCryptoRandomConsonant() {
 function validateWord() {
     const word = gameElements.inputElement.value.trim().toUpperCase();
 
-    if (word.length === 0) return;
-    if (submittedWords.includes(word)) {
-        outputMessage(`You have already submitted the word "${word}".`, "error", 3000);
-        return false;
-    }
+    if (word.length === 0) return false;
 
     const difficulty = localStorage.getItem("difficulty");
     let maxAllowed;
 
     if (difficulty === "easy") maxAllowed = Infinity;
     else if (difficulty === "medium") maxAllowed = 3;
-    else if (difficulty === "hard") maxAllowed = 1;  
+    else if (difficulty === "hard") maxAllowed = 1;
 
+    // Count how many of each letter the user chose
+    const chosenLetterCounts = {};
+    for (let letter of chosenLetters) {
+        chosenLetterCounts[letter] = (chosenLetterCounts[letter] || 0) + 1;
+    }
+
+    // Count how many of each letter the word uses
     const wordLetterCounts = {};
     for (let letter of word) {
-        if (!chosenLetters.includes(letter)) return false;
+        if (!chosenLetters.includes(letter)) {
+            outputMessage(`Word contains letter "${letter}" which was not chosen.`, "error", 3000);
+            return false;
+        }
         wordLetterCounts[letter] = (wordLetterCounts[letter] || 0) + 1;
     }
 
+    // Check if word uses more of any letter than available
     for (let letter in wordLetterCounts) {
-        if (wordLetterCounts[letter] > maxAllowed) return false;
+        const availableCount = Math.max(chosenLetterCounts[letter], maxAllowed);
+        if (wordLetterCounts[letter] > availableCount) {
+            outputMessage(`Word uses ${wordLetterCounts[letter]} "${letter}"s but only ${availableCount} available.`, "error", 3000);
+            return false;
+        }
     }
 
     return true;
@@ -178,9 +242,18 @@ function validateWord() {
 
 async function CheckWordWithAPI() {
     let valid = validateWord();
-    if (!valid) return; 
-
+    if (!valid) {
+        outputMessage("Invalid letter usage.", "error", 3000);
+        gameElements.inputElement.value = '';
+        return;
+    }
     const word = gameElements.inputElement.value.trim().toUpperCase();
+
+    if (submittedWords.includes(word)) {
+        outputMessage(`You have already submitted the word "${word}".`, "error", 3000);
+        gameElements.inputElement.value = '';
+        return;
+    }
 
     let multiplier = localStorage.getItem("scoreMultiplier");
     let score = parseInt(gameElements.scoreElement.textContent) + (word.length * multiplier);
@@ -192,7 +265,6 @@ async function CheckWordWithAPI() {
         submittedWords.push(word);
         gameElements.inputElement.value = '';
 
-        // Update score in backend
         const gameID = localStorage.getItem("gameID");
         if (gameID) {
             const updateResult = await backendUpdateScore(gameID, score);
@@ -201,7 +273,11 @@ async function CheckWordWithAPI() {
             }
         }
 
-        await backendSaveWord(gameID, word);
+        const result = await backendSaveWord(gameID, word);
+        console.log("Word saved:", result);
+    } else {
+        outputMessage(`Word "${word}" is invalid!`, "error", 3000);
+        gameElements.inputElement.value = '';
     }
 }
 
@@ -236,32 +312,29 @@ function handleTimerFinish() {
 
     if (submittedWords.length > 0) {
         outputMessage(`Time's up! You submitted ${submittedWords.length} words.`, "success", 5000);
+        submittedWords.length = 0;
         setTimeout(() => {
-            outputMessage("Chose a new set of letters to play again.", null, 3000);
+            outputMessage("Chose a new set of letters to play again.", null, 0);
         }, 5000);
-        set
     } else {
         gameElements.messageOverlay.classList.remove("hidden");
+        gameElements.messageOverlay.classList.remove("pointer-override");
     }
 }
 
 async function handleHomeButtonClick() {
     const result = await backendUpdateUserStats(userID, localStorage.getItem("gameID"));
-    if (!result.success) {
-        console.error("Failed to update user stats:", result.error);
-    }
     window.location.href = "home.html";
 }
 
 async function handlePlayAgainButtonClick() {
     const result = await backendUpdateUserStats(userID, localStorage.getItem("gameID"));
-    if (!result.success) {
-        console.error("Failed to update user stats:", result.error);
-        window.location.href = "home.html";
-        return;
-    }
-
     location.reload();
+    localStorage.setItem("gameType", "new-game");
+    let gameID = parseInt(localStorage.getItem("gameID"));
+    let newGameID = gameID + 1;
+    localStorage.setItem("gameID", newGameID);
+    init();
 }
 
 gameElements.vowelButton.addEventListener("click", handleVowelButtonClick);
@@ -271,4 +344,30 @@ timer.onStateChange((isRunning) => {
         handleTimerFinish();
     }
 });
+gameElements.inputElement.addEventListener("keypress", (event) => {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        CheckWordWithAPI();
+    }
+})
 gameElements.submitButton.addEventListener("click", () => CheckWordWithAPI());
+gameElements.homeButton.addEventListener("click", handleHomeButtonClick);
+
+gameElements.playAgainButton.addEventListener("click", handlePlayAgainButtonClick);
+document.getElementById("back-home-button").addEventListener("click", () => { 
+    if (timer.isRunning) {
+        localStorage.setItem("chosenLetters", JSON.stringify(chosenLetters));
+        localStorage.setItem("submittedWords", JSON.stringify(submittedWords));
+        localStorage.setItem("timeLeft", timer.timeLeft);
+    }
+
+    window.location.href = "home.html";
+ });
+
+window.addEventListener("beforeunload", () => {
+    if (timer.isRunning) {
+        localStorage.setItem("chosenLetters", JSON.stringify(chosenLetters));
+        localStorage.setItem("submittedWords", JSON.stringify(submittedWords));
+        localStorage.setItem("timeLeft", timer.timeLeft);
+    }
+})

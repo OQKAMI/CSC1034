@@ -245,7 +245,7 @@ async function backendFetchHigestScore(userID) {
     }
 }
 
-async function backendFetchGameScore(gameID) {
+export async function backendFetchGameScore(gameID) {
     try {
         let params = new URLSearchParams();
         params.append("action", "fetchGameScore");
@@ -263,13 +263,25 @@ async function backendFetchGameScore(gameID) {
     }
 }
 
-export async function backendUpdateUserStats(userID, gameID) {
-    const highestScoreResult = await backendFetchHigestScore(userID);
-    if (!highestScoreResult.success) {
-        return { success: false, error: highestScoreResult.error };
-    }
+async function backendFetchWordCount(gameID) {
+    try {
+        let params = new URLSearchParams();
+        params.append("action", "fetchWordCount");
+        params.append("gameID", gameID);
 
-    const highestScore = highestScoreResult.highestScore;
+        const result = await executeQuery(params);
+        if (result && result.success) {
+            return { success: true, wordCount: result.wordCount };
+        } else {
+            return { success: false, error: result.error || "Failed to fetch word count" };
+        }
+    } catch (err) {
+        console.error("Error fetching word count:", err);
+        return { success: false, error: "Network error during word count fetch" };
+    }
+}
+
+export async function backendUpdateUserStats(userID, gameID) {
     const gameScoreResult = await backendFetchGameScore(gameID);
     if (!gameScoreResult.success) {
         return { success: false, error: gameScoreResult.error };
@@ -277,14 +289,18 @@ export async function backendUpdateUserStats(userID, gameID) {
 
     const gameScore = gameScoreResult.score;
 
-    const isHighScore = gameScore > highestScore;
+    const wordsEnteredResult = await backendFetchWordCount(gameID);
+    if (!wordsEnteredResult.success) {
+        return { success: false, error: wordsEnteredResult.error };
+    }
+    const wordsEntered = wordsEnteredResult.wordCount;
 
     try {
         let params = new URLSearchParams();
         params.append("action", "updateUserStats");
         params.append("userID", userID);
         params.append("score", gameScore);
-        params.append("isHighScore", isHighScore);
+        params.append("wordsEntered", wordsEntered);
 
         const result = await executeQuery(params);
         if (result && result.success) {
