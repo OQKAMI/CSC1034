@@ -1,5 +1,4 @@
-// TODO: DOCUMENT THIS
-export async function executeQuery(params) {
+async function executeQuery(params) {
     let url = "https://amakay01.webhosting1.eeecs.qub.ac.uk/dbConnector.php";
     try {
         let response = await fetch(url, {
@@ -15,7 +14,7 @@ export async function executeQuery(params) {
     }
 }
 
-// TODO: DOCUMENT THIS
+
 export async function backendUsernameAvailability(username) {
     try {
         let params = new URLSearchParams();
@@ -34,7 +33,7 @@ export async function backendUsernameAvailability(username) {
     }
 }
 
-// TODO: DOCUMENT THIS
+
 export async function backendUserRegistration(userID, username, hashedPassword) {
     try {
         let params = new URLSearchParams();
@@ -55,7 +54,7 @@ export async function backendUserRegistration(userID, username, hashedPassword) 
     }
 }
 
-// TODO: DOCUMENT THIS
+
 export async function backendUserLogin(username, password) {
     try {
         let params = new URLSearchParams();
@@ -75,7 +74,7 @@ export async function backendUserLogin(username, password) {
     }
 }
 
-// TODO: DOCUMENT THIS
+
 export async function checkSession(sessionID) {
     try {
         let params = new URLSearchParams();
@@ -90,7 +89,7 @@ export async function checkSession(sessionID) {
     }
 }
 
-// TODO: DOCUMENT THIS
+
 export async function getCurrentUserID(sessionID) {
     try {
         let params = new URLSearchParams();
@@ -110,7 +109,7 @@ export async function getCurrentUserID(sessionID) {
     }
 }
 
-// TODO: DOCUMENT THIS
+
 export async function backendDeleteExpiredSessions() {
     try {
         let params = new URLSearchParams();
@@ -129,20 +128,40 @@ export async function backendDeleteExpiredSessions() {
 }
 
 export async function backendCheckWordWithAPI(word) {
+    const cleanWord = word.toLowerCase();
+    const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`;
+
+    try {
+        const response = await fetch(url);
+        
+        if (response.ok) {
+            return { valid: true };
+        } else if (response.status === 404) {
+            return { valid: false, error: 'Word not found in dictionary' };
+        } else {
+            return { valid: false, error: `HTTP Error: ${response.status}` };
+        }
+    } catch (error) {
+        return { valid: false, error: `Network error: ${error.message}` };
+    }
+}
+
+export async function backendSaveWord(gameID, word) {
     try {
         let params = new URLSearchParams();
-        params.append("action", "checkWord");
+        params.append("action", "saveWord");
+        params.append("gameID", gameID);
         params.append("word", word);
 
         const result = await executeQuery(params);
-        if (result && result.valid) {
-            return { success: true, data: result.data }; // TODO: REMOVE DATA -> DEBUG ONLY
+        if (result && result.success) {
+            return { success: true };
         } else {
-            return { success: false };
+            return { success: false, error: result.error || "Failed to save word" };
         }
     } catch (err) {
-        console.error("Error checking word with API:", err);
-        return { success: false, error: "Network error during word check" };
+        console.error("Error saving word:", err);
+        return { success: false, error: "Network error during word save" };
     }
 }
 
@@ -206,4 +225,75 @@ export async function backendUpdateScore(gameID, score) {
         console.error("Error updating score:", err);
         return { success: false, error: "Network error during score update" };
     }   
+}
+
+async function backendFetchHigestScore(userID) {
+    try {
+        let params = new URLSearchParams();
+        params.append("action", "fetchHighestScore");
+        params.append("userID", userID);
+
+        const result = await executeQuery(params);
+        if (result && result.success) {
+            return { success: true, highestScore: result.highestScore };
+        } else {
+            return { success: false, error: result.error || "Failed to fetch highest score" };
+        }
+    } catch (err) {
+        console.error("Error fetching highest score:", err);
+        return { success: false, error: "Network error during highest score fetch" };
+    }
+}
+
+async function backendFetchGameScore(gameID) {
+    try {
+        let params = new URLSearchParams();
+        params.append("action", "fetchGameScore");
+        params.append("gameID", gameID);
+
+        const result = await executeQuery(params);
+        if (result && result.success) {
+            return { success: true, score: result.score };
+        } else {
+            return { success: false, error: result.error || "Failed to fetch game score" };
+        }
+    } catch (err) {
+        console.error("Error fetching game score:", err);
+        return { success: false, error: "Network error during game score fetch" };
+    }
+}
+
+export async function backendUpdateUserStats(userID, gameID) {
+    const highestScoreResult = await backendFetchHigestScore(userID);
+    if (!highestScoreResult.success) {
+        return { success: false, error: highestScoreResult.error };
+    }
+
+    const highestScore = highestScoreResult.highestScore;
+    const gameScoreResult = await backendFetchGameScore(gameID);
+    if (!gameScoreResult.success) {
+        return { success: false, error: gameScoreResult.error };
+    }
+
+    const gameScore = gameScoreResult.score;
+
+    const isHighScore = gameScore > highestScore;
+
+    try {
+        let params = new URLSearchParams();
+        params.append("action", "updateUserStats");
+        params.append("userID", userID);
+        params.append("score", gameScore);
+        params.append("isHighScore", isHighScore);
+
+        const result = await executeQuery(params);
+        if (result && result.success) {
+            return { success: true };
+        } else {
+            return { success: false, error: result.error || "Failed to update user stats" };
+        }
+    } catch (err) {
+        console.error("Error updating user stats:", err);
+        return { success: false, error: "Network error during user stats update" };
+    }
 }

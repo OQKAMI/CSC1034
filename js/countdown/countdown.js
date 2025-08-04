@@ -1,4 +1,4 @@
-import { backendDeleteExpiredSessions, backendCheckWordWithAPI, backendCreateGame, backendUpdateScore, getCurrentUserID } from "../database.js";
+import { backendDeleteExpiredSessions, backendSaveWord, backendCheckWordWithAPI, backendCreateGame, backendUpdateScore, getCurrentUserID, backendUpdateUserStats } from "../backend.js";
 import Timer from "./timer.js";
 
 async function expiredSessionCleanup() {
@@ -10,10 +10,18 @@ async function expiredSessionCleanup() {
 expiredSessionCleanup();
 
 const timer = new Timer();
+const userID = await getCurrentUserID(localStorage.getItem("sessionID"));
+if (!userID.success) {
+    console.error("Failed to get current user ID:", userID.error);
+    window.location.href = "home.html";
+    return;
+}
 
 const chosenLetters = [];
+const submittedWords = [];
 
 const gameElements = {
+    messageOverlay: document.querySelector(".message-overlay"),
     scoreElement: document.getElementById("score"),
     difficultyContainer: document.querySelector(".game-difficulty"),
     difficultyElement: document.getElementById("difficulty"),
@@ -59,7 +67,26 @@ async function init() {
             break;
     }
 
+    gameElements.scoreElement.textContent = "0";
+    outputMessage("Welcome to Countdown!");
+
     createSaveGame();
+}
+
+function outputMessage(message, type, clearAfter = 0) {
+    gameElements.messageElement.textContent = message;
+
+    if (type) {
+        gameElements.messageElement.style.color = "var(--" + type + ")";
+    } else {
+        gameElements.messageElement.style.color = "var(--text-primary)";
+    }
+
+    if (clearAfter > 0) {
+        setTimeout(() => {
+            gameElements.messageElement.textContent = "";
+        }, clearAfter);
+    }
 }
 
 async function createSaveGame() {
@@ -68,14 +95,8 @@ async function createSaveGame() {
 
         localStorage.setItem("gameType", "resume-game");
 
-        const userID = await getCurrentUserID(localStorage.getItem("sessionID"));
-        if (!userID.success) {
-            console.error("Failed to get current user ID:", userID.error);
-            return;
-        }
-
         const difficulty = localStorage.getItem("difficulty");
-        const result = await backendCreateGame(userID.userID, difficulty);
+        const result = await backendCreateGame(userID, difficulty);
         if (result.success) {
             localStorage.setItem("gameID", result.gameID);
         } else {
@@ -94,6 +115,12 @@ function getCryptoRandomVowel() {
 
     chosenLetters.push(vowels[randomIndex]); // Saving mechanism for chosen letters
 
+    if (chosenLetters.length === 9) {
+        // Start timer
+        timer.start();
+        outputMessage("Submit words using the letters.");
+    }
+
     return vowels[randomIndex];
 }
 
@@ -110,6 +137,12 @@ function getCryptoRandomConsonant() {
 
     chosenLetters.push(consonants[randomIndex]); // Saving mechanism for chosen letters
 
+    if (chosenLetters.length === 9) {
+        // Start timer
+        timer.start();
+        outputMessage("Submit words using the letters.");
+    }
+
     return consonants[randomIndex];
 }
 
@@ -117,8 +150,10 @@ function getCryptoRandomConsonant() {
 function validateWord() {
     const word = gameElements.inputElement.value.trim().toUpperCase();
 
-    if (word.length === 0) {
-        return;
+    if (word.length === 0) return;
+    if (submittedWords.includes(word)) {
+        outputMessage(`You have already submitted the word "${word}".`, "error", 3000);
+        return false;
     }
 
     const difficulty = localStorage.getItem("difficulty");
@@ -141,33 +176,41 @@ function validateWord() {
     return true;
 }
 
-async function CheckWordWithAPI(word) {
+async function CheckWordWithAPI() {
     let valid = validateWord();
-    if (!valid) return false;
+    if (!valid) return; 
+
+    const word = gameElements.inputElement.value.trim().toUpperCase();
 
     let multiplier = localStorage.getItem("scoreMultiplier");
     let score = parseInt(gameElements.scoreElement.textContent) + (word.length * multiplier);
 
-    return await backendCheckWordWithAPI(word).then(result => {
-        if (result.success) {
-            gameElements.messageElement.textContent = "Valid word!";
-            gameElements.scoreElement.textContent = score.toString(); 
-            gameElements.inputElement.value = "";
-        } else {
-            gameElements.messageElement.textContent = "Invalid word. Try again.";
+    const result = await backendCheckWordWithAPI(word);
+    if (result.valid) {
+        gameElements.messageElement.textContent = `Word "${word}" is valid!`;
+        gameElements.scoreElement.textContent = score;
+        submittedWords.push(word);
+        gameElements.inputElement.value = '';
+
+        // Update score in backend
+        const gameID = localStorage.getItem("gameID");
+        if (gameID) {
+            const updateResult = await backendUpdateScore(gameID, score);
+            if (!updateResult.success) {
+                console.error("Failed to update score:", updateResult.error);
+            }
         }
-    }).catch(err => {
-        console.error("Error checking word:", err);
-        gameElements.messageElement.textContent = "Error checking word. Please try again.";
-    });
+
+        await backendSaveWord(gameID, word);
+    }
 }
 
 // Event Handlers
 
 function handleVowelButtonClick() {
-    const emptySlot = Object.values(letterElements).find(el => el.textContent === ''); // Find the first empty letter slot
+    const emptySlot = Object.values(letterElements).find(el => el.textContent === '');
     if (!emptySlot) {
-        return; // No empty slot available
+        return;
     }
 
     const letter = getCryptoRandomVowel();
@@ -175,22 +218,49 @@ function handleVowelButtonClick() {
 }
 
 function handleConsonantButtonClick() {
-    const emptySlot = Object.values(letterElements).find(el => el.textContent === ''); // Find the first empty letter slot
+    const emptySlot = Object.values(letterElements).find(el => el.textContent === '');
     if (!emptySlot) {
-        return; // No empty slot available'
+        return;
     } 
 
     const letter = getCryptoRandomConsonant();
     emptySlot.textContent = letter;
 }
 
-function handleHomeButtonClick() {
-    // TODO: Now migrate temp game data from Games to UserStats !!!!!!!
+function handleTimerFinish() {
+    for (let el of Object.values(letterElements)) {
+        el.textContent = '';
+    }
+
+    chosenLetters.length = 0;
+
+    if (submittedWords.length > 0) {
+        outputMessage(`Time's up! You submitted ${submittedWords.length} words.`, "success", 5000);
+        setTimeout(() => {
+            outputMessage("Chose a new set of letters to play again.", null, 3000);
+        }, 5000);
+        set
+    } else {
+        gameElements.messageOverlay.classList.remove("hidden");
+    }
+}
+
+async function handleHomeButtonClick() {
+    const result = await backendUpdateUserStats(userID, localStorage.getItem("gameID"));
+    if (!result.success) {
+        console.error("Failed to update user stats:", result.error);
+    }
     window.location.href = "home.html";
 }
 
-function handlePlayAgainButtonClick() {
-    // TODO: Now migrate temp game data from Games to UserStats !!!!!!!
+async function handlePlayAgainButtonClick() {
+    const result = await backendUpdateUserStats(userID, localStorage.getItem("gameID"));
+    if (!result.success) {
+        console.error("Failed to update user stats:", result.error);
+        window.location.href = "home.html";
+        return;
+    }
+
     location.reload();
 }
 
@@ -198,11 +268,7 @@ gameElements.vowelButton.addEventListener("click", handleVowelButtonClick);
 gameElements.consonantButton.addEventListener("click", handleConsonantButtonClick);
 timer.onStateChange((isRunning) => {
     if (!isRunning) {
-        for (let el of Object.values(letterElements)) {
-            el.textContent = ''; // Clear all letter slots
-        }
-
-
+        handleTimerFinish();
     }
 });
-gameElements.submitButton.addEventListener("click", CheckWordWithAPI);
+gameElements.submitButton.addEventListener("click", () => CheckWordWithAPI());

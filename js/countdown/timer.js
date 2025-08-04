@@ -4,6 +4,8 @@ class Timer {
     }
 
     init() {
+        this.timerDisplay = document.getElementById("timer-display");
+
         this.listeners = [];
 
         this.duration = 75; // Default

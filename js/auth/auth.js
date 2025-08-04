@@ -1,4 +1,4 @@
-import { backendUserRegistration, backendUserLogin, getCurrentUserID, checkSession, backendUsernameAvailability, backendDeleteExpiredSessions } from "../database.js";
+import { backendUserRegistration, backendUserLogin, getCurrentUserID, checkSession, backendUsernameAvailability, backendDeleteExpiredSessions } from "../backend.js";
 import RegValidator from "./validation.js";
 import { updateConfirmPasswordLength, updatePasswordUI, resetPasswordUI } from "./validation.js";
 import FormUI from "./formUI.js";

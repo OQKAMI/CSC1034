@@ -1,4 +1,4 @@
-import { backendDeleteExpiredSessions, backendCheckExistingGame } from "../database.js";
+import { backendDeleteExpiredSessions, backendCheckExistingGame } from "../backend.js";
 import HomeUI from "./homeUI.js";
 
 const homeUI = new HomeUI();
@@ -16,7 +16,7 @@ await checkForGameSave();
 
 async function checkForGameSave() {
     const result = await backendCheckExistingGame();
-    console.log("Check for existing game result:", result);
+
     if (result && result.hasGameSave) {
         if (result.gameData) {
             localStorage.setItem("gameID", result.gameData.gameID);
