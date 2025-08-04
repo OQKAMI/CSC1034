@@ -1,5 +1,13 @@
-import { checkWordWithAPI } from "../database.js";
+import { backendDeleteExpiredSessions, backendCheckWordWithAPI, backendCreateGame, backendUpdateScore, getCurrentUserID } from "../database.js";
 import Timer from "./timer.js";
+
+async function expiredSessionCleanup() {
+    await backendDeleteExpiredSessions();
+    setTimeout(expiredSessionCleanup, 1000 * 60 * 60); // Check every hour
+}
+
+// Session cleanup upon loading :::
+expiredSessionCleanup();
 
 const timer = new Timer();
 
@@ -11,9 +19,11 @@ const gameElements = {
     difficultyElement: document.getElementById("difficulty"),
     vowelButton: document.getElementById("vowel-button"),
     consonantButton: document.getElementById("consonant-button"),
-    messageEleement: document.getElementById("message"),
+    messageElement: document.getElementById("message"),
     inputElement: document.getElementById("word-input"),
     submitButton: document.getElementById("submit-word"),
+    playAgainButton: document.getElementById("play-again"),
+    homeButton: document.getElementById("home"),
 }
 
 const letterElements = {
@@ -30,7 +40,7 @@ const letterElements = {
 
 init();
 
-function init() {
+async function init() {
     switch (localStorage.getItem("difficulty")) {
         case "easy":
             timer.setDuration(90);
@@ -47,6 +57,30 @@ function init() {
             gameElements.difficultyElement.textContent = "Hard";
             gameElements.difficultyContainer.classList.add("hard");
             break;
+    }
+
+    createSaveGame();
+}
+
+async function createSaveGame() {
+    const gameType = localStorage.getItem("gameType");
+    if (gameType === "new-game") {
+
+        localStorage.setItem("gameType", "resume-game");
+
+        const userID = await getCurrentUserID(localStorage.getItem("sessionID"));
+        if (!userID.success) {
+            console.error("Failed to get current user ID:", userID.error);
+            return;
+        }
+
+        const difficulty = localStorage.getItem("difficulty");
+        const result = await backendCreateGame(userID.userID, difficulty);
+        if (result.success) {
+            localStorage.setItem("gameID", result.gameID);
+        } else {
+            console.error("Failed to create game:", result.error);
+        }
     }
 }
 
@@ -79,6 +113,55 @@ function getCryptoRandomConsonant() {
     return consonants[randomIndex];
 }
 
+// Word Validation Function
+function validateWord() {
+    const word = gameElements.inputElement.value.trim().toUpperCase();
+
+    if (word.length === 0) {
+        return;
+    }
+
+    const difficulty = localStorage.getItem("difficulty");
+    let maxAllowed;
+
+    if (difficulty === "easy") maxAllowed = Infinity;
+    else if (difficulty === "medium") maxAllowed = 3;
+    else if (difficulty === "hard") maxAllowed = 1;  
+
+    const wordLetterCounts = {};
+    for (let letter of word) {
+        if (!chosenLetters.includes(letter)) return false;
+        wordLetterCounts[letter] = (wordLetterCounts[letter] || 0) + 1;
+    }
+
+    for (let letter in wordLetterCounts) {
+        if (wordLetterCounts[letter] > maxAllowed) return false;
+    }
+
+    return true;
+}
+
+async function CheckWordWithAPI(word) {
+    let valid = validateWord();
+    if (!valid) return false;
+
+    let multiplier = localStorage.getItem("scoreMultiplier");
+    let score = parseInt(gameElements.scoreElement.textContent) + (word.length * multiplier);
+
+    return await backendCheckWordWithAPI(word).then(result => {
+        if (result.success) {
+            gameElements.messageElement.textContent = "Valid word!";
+            gameElements.scoreElement.textContent = score.toString(); 
+            gameElements.inputElement.value = "";
+        } else {
+            gameElements.messageElement.textContent = "Invalid word. Try again.";
+        }
+    }).catch(err => {
+        console.error("Error checking word:", err);
+        gameElements.messageElement.textContent = "Error checking word. Please try again.";
+    });
+}
+
 // Event Handlers
 
 function handleVowelButtonClick() {
@@ -101,5 +184,25 @@ function handleConsonantButtonClick() {
     emptySlot.textContent = letter;
 }
 
+function handleHomeButtonClick() {
+    // TODO: Now migrate temp game data from Games to UserStats !!!!!!!
+    window.location.href = "home.html";
+}
+
+function handlePlayAgainButtonClick() {
+    // TODO: Now migrate temp game data from Games to UserStats !!!!!!!
+    location.reload();
+}
+
 gameElements.vowelButton.addEventListener("click", handleVowelButtonClick);
 gameElements.consonantButton.addEventListener("click", handleConsonantButtonClick);
+timer.onStateChange((isRunning) => {
+    if (!isRunning) {
+        for (let el of Object.values(letterElements)) {
+            el.textContent = ''; // Clear all letter slots
+        }
+
+
+    }
+});
+gameElements.submitButton.addEventListener("click", CheckWordWithAPI);

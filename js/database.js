@@ -128,7 +128,7 @@ export async function backendDeleteExpiredSessions() {
     }
 }
 
-export async function checkWordWithAPI(word) {
+export async function backendCheckWordWithAPI(word) {
     try {
         let params = new URLSearchParams();
         params.append("action", "checkWord");
@@ -146,13 +146,36 @@ export async function checkWordWithAPI(word) {
     }
 }
 
-export async function backendCreateGame(userID, difficulty, score) {
+export async function backendCheckExistingGame() {
+    const userID = await getCurrentUserID(localStorage.getItem("sessionID"));
+    if (!userID.success) {
+        console.error("Failed to get current user ID:", userID.error);
+        return { success: false, error: "Failed to get current user ID" };
+    }
+
+    try {
+        let params = new URLSearchParams();
+        params.append("action", "checkExistingGame");
+        params.append("userID", userID.userID);
+
+        const result = await executeQuery(params);
+        if (result && result.hasGameSave) {
+            return { success: true, hasGameSave: result.hasGameSave, gameData: result.gameData || null };
+        } else {
+            return { success: false, error: result.error || "No existing game found" };
+        }
+    } catch (err) {
+        console.error("Error checking existing game:", err);
+        return { success: false, error: "Network error during game check" };
+    }
+}
+
+export async function backendCreateGame(userID, difficulty) {
     try {
         let params = new URLSearchParams();
         params.append("action", "createGame");
         params.append("userID", userID);
         params.append("difficulty", difficulty);
-        params.append("score", score);
 
         const result = await executeQuery(params);
         if (result && result.success) {
@@ -164,4 +187,23 @@ export async function backendCreateGame(userID, difficulty, score) {
         console.error("Error creating game:", err);
         return { success: false, error: "Network error during game creation" };
     }
+}
+
+export async function backendUpdateScore(gameID, score) {
+    try {
+        let params = new URLSearchParams();
+        params.append("action", "updateGameScore");
+        params.append("gameID", gameID);
+        params.append("score", score);
+
+        const result = await executeQuery(params);
+        if (result && result.success) {
+            return { success: true };
+        } else {
+            return { success: false, error: result.error || "Failed to update score" };
+        }
+    } catch (err) {
+        console.error("Error updating score:", err);
+        return { success: false, error: "Network error during score update" };
+    }   
 }
